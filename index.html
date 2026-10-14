@@ -1,1 +1,1048 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文献阅读记录库 · 数统学院复杂系统课题组</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+body{background:#f5f7fc;padding:2rem 1rem;min-height:100vh}
+.app-container{max-width:1280px;margin:0 auto}
 
+.top-bar{background:#fff;border-radius:40px;padding:.9rem 1.8rem;display:flex;justify-content:space-between;align-items:center;box-shadow:0 8px 20px rgba(0,20,50,.04);margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem}
+.brand{display:flex;align-items:center;gap:12px;font-weight:600;color:#1a2c3e}
+.brand i{font-size:1.6rem;color:#2c5f8a}
+.brand .sub{font-size:.75rem;color:#7a94ad;font-weight:500;margin-left:6px}
+.user-area{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.user-chip{background:#e9f0f9;padding:.4rem 1rem;border-radius:40px;font-size:.85rem;font-weight:600;color:#2c5f8a;display:flex;align-items:center;gap:6px}
+.btn{border:none;border-radius:30px;padding:.7rem 1.5rem;font-weight:600;font-size:.9rem;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:.15s;background:#fff;color:#1e3b5c;border:1.5px solid #d0ddee;font-family:inherit}
+.btn:hover{background:#f2f8ff;border-color:#2c5f8a}
+.btn-primary{background:#2c5f8a;border-color:#2c5f8a;color:#fff;box-shadow:0 8px 16px -6px rgba(44,95,138,.3)}
+.btn-primary:hover{background:#1e4466;border-color:#1e4466}
+.btn-danger{background:#b33e3e;border-color:#b33e3e;color:#fff}
+.btn-danger:hover{background:#922e2e;border-color:#922e2e}
+.btn-sm{padding:.35rem .9rem;font-size:.78rem}
+
+.toolbar{background:#fff;border-radius:28px;padding:1.2rem 1.8rem;margin-bottom:1.5rem;box-shadow:0 8px 20px rgba(0,20,50,.04)}
+.search-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:1rem}
+.search-box{flex:1;min-width:220px;position:relative}
+.search-box i{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:#8ba3bc;pointer-events:none}
+.search-box input{width:100%;background:#f9fcff;border:1.5px solid #dfe8f2;border-radius:40px;padding:.8rem 1.2rem .8rem 2.8rem;font-size:.9rem;color:#1a2c3e;outline:none;font-family:inherit;transition:.15s}
+.search-box input:focus{border-color:#2c5f8a;background:#fff;box-shadow:0 0 0 4px rgba(44,95,138,.08)}
+.filter-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.filter-row label{font-size:.8rem;font-weight:600;color:#5b7a98;display:flex;align-items:center;gap:5px}
+.filter-row select{background:#f9fcff;border:1.5px solid #dfe8f2;border-radius:20px;padding:.5rem 1rem;font-size:.82rem;color:#1a2c3e;outline:none;font-family:inherit;cursor:pointer;transition:.15s}
+.filter-row select:focus{border-color:#2c5f8a;background:#fff}
+.stat-chip{background:#eef4fc;padding:.4rem 1rem;border-radius:40px;font-size:.8rem;font-weight:600;color:#3d6a94;display:flex;align-items:center;gap:6px}
+.stat-chip i{color:#2c5f8a}
+
+.tag-bar{display:flex;flex-wrap:wrap;gap:8px;margin-top:.8rem;padding-top:.8rem;border-top:1px dashed #e2ebf5}
+.tag-btn{background:#f0f5fc;border:1.5px solid transparent;color:#42678c;padding:.35rem .95rem;border-radius:40px;font-size:.78rem;font-weight:600;cursor:pointer;transition:.15s;font-family:inherit;display:flex;align-items:center;gap:5px}
+.tag-btn:hover{background:#e1ecf9;border-color:#c3dcf5}
+.tag-btn.active{background:#2c5f8a;color:#fff;border-color:#2c5f8a;box-shadow:0 4px 10px -2px rgba(44,95,138,.4)}
+.tag-btn .count{background:rgba(255,255,255,.35);padding:.05rem .5rem;border-radius:20px;font-size:.7rem}
+.tag-btn.active .count{background:rgba(255,255,255,.25)}
+
+.view-controls{display:flex;gap:8px;align-items:center;margin-left:auto}
+.view-btn{background:#f0f5fc;border:1.5px solid transparent;color:#42678c;padding:.45rem .8rem;border-radius:14px;font-size:.8rem;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;font-weight:600;transition:.15s}
+.view-btn:hover{background:#e1ecf9}
+.view-btn.active{background:#2c5f8a;color:#fff}
+
+.lit-list{display:flex;flex-direction:column;gap:1rem}
+.lit-card{border-radius:24px;padding:1.5rem 1.8rem;box-shadow:0 8px 24px rgba(0,20,40,.06);border:1.5px solid transparent;transition:.2s}
+.lit-card:nth-child(4n+1){background:#f4f9ff;border-color:#d3e5fa}
+.lit-card:nth-child(4n+2){background:#fdf8f2;border-color:#f0dfcd}
+.lit-card:nth-child(4n+3){background:#f3faf6;border-color:#cfe9db}
+.lit-card:nth-child(4n+4){background:#f9f5fd;border-color:#e2d4f0}
+.lit-card:hover{box-shadow:0 12px 30px rgba(0,20,40,.12)}
+
+.lit-header{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;margin-bottom:.6rem}
+.lit-title{font-size:1.15rem;font-weight:700;color:#0d2b3e;line-height:1.4;flex:1;cursor:pointer;display:flex;align-items:flex-start;gap:8px}
+.lit-title .toggle-icon{color:#7a9bbd;font-size:.9rem;margin-top:6px;transition:.2s;flex-shrink:0}
+.lit-card.collapsed .toggle-icon{transform:rotate(-90deg)}
+.lit-title:hover{color:#2c5f8a}
+.lit-badge{background:#fff;padding:.3rem .9rem;border-radius:40px;font-size:.72rem;font-weight:600;color:#2c5f8a;border:1px solid #cdddec;white-space:nowrap;display:flex;align-items:center;gap:5px}
+
+.lit-body{overflow:hidden;transition:.2s}
+.lit-card.collapsed .lit-body{display:none}
+
+.lit-meta{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:.82rem;color:#3d5e7e;margin-bottom:.6rem}
+.lit-meta i{width:15px;color:#6b8db0}
+.lit-meta .tag{background:#fff;border:1px solid #d5e3f0;padding:.15rem .7rem;border-radius:20px;font-size:.72rem;color:#42678c;font-weight:600}
+
+/* 链接行 */
+.src-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:.6rem}
+.src-link{display:inline-flex;align-items:center;gap:6px;background:#e7f1fb;border:1.5px solid #a9ccec;padding:.45rem 1.1rem;border-radius:40px;font-size:.78rem;color:#1a5fa0;font-weight:600;text-decoration:none;transition:.15s;max-width:100%;cursor:pointer;font-family:inherit}
+.src-link:hover{background:#2c5f8a;border-color:#2c5f8a;color:#fff;box-shadow:0 4px 10px -2px rgba(44,95,138,.4);text-decoration:none}
+.src-link:hover i{color:#fff}
+.src-link i{color:#1a5fa0;flex-shrink:0;transition:.15s}
+.src-link .url-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:420px}
+.src-copy-btn{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1.5px solid #d0ddee;padding:.45rem .9rem;border-radius:40px;font-size:.75rem;color:#4b6f8e;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+.src-copy-btn:hover{background:#f0f5fc;border-color:#2c5f8a;color:#2c5f8a}
+
+.lit-ref{background:rgba(255,255,255,.75);border-radius:14px;padding:.7rem 1.1rem;font-family:'Courier New',monospace;font-size:.82rem;color:#1f405e;margin:.6rem 0;border:1px dashed #b8cee6;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.lit-notes{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin:.8rem 0 .6rem}
+.note-block{background:rgba(255,255,255,.75);border-radius:16px;padding:.85rem 1rem;border-left:4px solid #6b8db0}
+.note-block strong{font-size:.72rem;text-transform:uppercase;letter-spacing:.3px;color:#2c5f8a;display:block;margin-bottom:5px}
+.note-block p{font-size:.87rem;color:#1f3a4e;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.lit-footer{display:flex;justify-content:space-between;align-items:center;margin-top:1rem;flex-wrap:wrap;gap:10px}
+.lit-actions{display:flex;gap:8px;flex-wrap:wrap}
+.counter{font-size:.72rem;background:rgba(255,255,255,.85);padding:.3rem .9rem;border-radius:40px;color:#4b6f8e}
+.locked{color:#b15e5e;font-size:.72rem;background:rgba(255,240,240,.9);padding:.3rem 1rem;border-radius:40px;display:flex;align-items:center;gap:5px}
+.empty{text-align:center;padding:3rem 2rem;color:#8ba3bc;background:#fff;border-radius:28px}
+.empty i{font-size:3rem;margin-bottom:1rem;opacity:.5}
+.empty p{margin-bottom:.5rem}
+mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
+
+.overlay{position:fixed;inset:0;background:rgba(10,25,45,.55);backdrop-filter:blur(4px);display:flex;justify-content:center;align-items:center;z-index:1000;padding:1.5rem}
+.overlay.hidden{display:none}
+.modal{background:#fff;border-radius:32px;padding:2rem 2.2rem;width:100%;max-width:820px;max-height:90vh;overflow-y:auto;box-shadow:0 30px 60px rgba(0,20,40,.3)}
+.modal-sm{max-width:420px}
+.modal h3{font-size:1.4rem;font-weight:700;color:#0d2b3e;margin-bottom:1.4rem;display:flex;align-items:center;gap:10px}
+.modal h3 i{color:#2c5f8a}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:1rem}
+.field label{font-size:.82rem;font-weight:600;color:#3b5a7a;display:flex;align-items:center;gap:5px}
+.field input,.field textarea{background:#f9fcff;border:1.5px solid #dfe8f2;border-radius:18px;padding:.85rem 1.2rem;font-size:.92rem;color:#1a2c3e;outline:none;font-family:inherit;width:100%;transition:.15s}
+.field input:focus,.field textarea:focus{border-color:#2c5f8a;background:#fff;box-shadow:0 0 0 4px rgba(44,95,138,.08)}
+.field textarea{min-height:75px;resize:vertical}
+.field .tip{font-size:.72rem;color:#8ba3bc;margin-top:3px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.grid2 .full{grid-column:span 2}
+.ref-box{background:#f0f7ff;border-radius:18px;padding:.9rem 1.2rem;margin:.3rem 0 1rem;border-left:5px solid #2c5f8a;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.ref-box .ref-text{font-family:'Courier New',monospace;font-size:.88rem;color:#0d2b3e;word-break:break-word;flex:1;min-width:200px}
+.modal-actions{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;border-top:1px solid #e6eef9;padding-top:1.4rem;margin-top:.5rem}
+.hint{font-size:.78rem;color:#8ba3bc;margin-top:1rem;text-align:center}
+.toast{position:fixed;top:2rem;left:50%;transform:translateX(-50%);background:#2c5f8a;color:#fff;padding:.8rem 1.6rem;border-radius:40px;font-weight:600;font-size:.9rem;z-index:2000;box-shadow:0 10px 30px rgba(0,0,0,.2);opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}
+
+.delete-modal{max-width:440px;text-align:center}
+.delete-modal h3{justify-content:center;color:#b33e3e}
+.delete-modal h3 i{color:#b33e3e}
+.delete-warning{background:#fff5f5;border:1.5px solid #f5c9c9;border-radius:18px;padding:1.2rem 1.4rem;margin-bottom:1.4rem;text-align:left}
+.delete-warning .lit-info{font-size:.85rem;color:#6b3d3d;line-height:1.7}
+.delete-warning .lit-info .label{color:#a76b6b;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.delete-warning .lit-info .val{color:#4a2525;font-weight:600}
+.delete-actions{display:flex;gap:12px;justify-content:center}
+.btn-cancel-del{background:#f0f5fc;border-color:#d0ddee;color:#3b5a7a;padding:.8rem 2rem}
+.btn-cancel-del:hover{background:#e1ecf9}
+.btn-confirm-del{background:#b33e3e;border-color:#b33e3e;color:#fff;padding:.8rem 2rem;font-weight:700}
+.btn-confirm-del:hover{background:#922e2e;border-color:#922e2e}
+.btn-confirm-del:disabled{background:#ccc;border-color:#ccc;cursor:not-allowed}
+.del-countdown{font-size:.75rem;color:#b15e5e;margin-top:.6rem}
+
+@media(max-width:700px){
+    .grid2{grid-template-columns:1fr}
+    .grid2 .full{grid-column:span 1}
+    .lit-notes{grid-template-columns:1fr}
+    .view-controls{width:100%;justify-content:flex-end}
+    .src-link .url-text{max-width:200px}
+}
+</style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="top-bar">
+        <div class="brand">
+            <i class="fas fa-book-open-reader"></i>
+            <span>数统学院复杂系统课题组</span>
+            <span class="sub">文献阅读记录库</span>
+        </div>
+        <div class="user-area" id="userArea"></div>
+    </div>
+
+    <div class="toolbar">
+        <div class="search-row">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="搜索标题 / 作者 / 期刊 / 笔记 / 关键词...">
+            </div>
+            <div class="view-controls">
+                <button class="view-btn active" id="btnExpandAll" title="展开全部"><i class="fas fa-chevron-down"></i> 展开</button>
+                <button class="view-btn" id="btnCollapseAll" title="折叠全部"><i class="fas fa-chevron-up"></i> 折叠</button>
+            </div>
+        </div>
+        <div class="filter-row">
+            <label><i class="fas fa-filter"></i> 筛选：</label>
+            <select id="filterReader"><option value="">全部阅读者</option></select>
+            <select id="filterYear"><option value="">全部年份</option></select>
+            <select id="filterJournal"><option value="">全部期刊/会议</option></select>
+            <select id="filterOwner"><option value="">全部提交人</option></select>
+            <label style="margin-left:auto"><i class="fas fa-sort"></i> 排序：</label>
+            <select id="sortBy">
+                <option value="date-desc">阅读时间（新→旧）</option>
+                <option value="date-asc">阅读时间（旧→新）</option>
+                <option value="year-desc">论文年份（新→旧）</option>
+                <option value="year-asc">论文年份（旧→新）</option>
+                <option value="title-asc">标题（A→Z）</option>
+            </select>
+            <span class="stat-chip" id="statChip"><i class="fas fa-file-alt"></i> 共 0 篇</span>
+        </div>
+        <div class="tag-bar" id="tagBar"></div>
+    </div>
+
+    <div id="litList" class="lit-list"></div>
+    <div id="emptyMsg" class="empty" style="display:none">
+        <i class="fas fa-search"></i>
+        <p>没有找到匹配的文献</p>
+        <p style="font-size:.85rem;color:#a8bcd0">试试调整搜索关键词或筛选条件</p>
+    </div>
+</div>
+
+<!-- 登录弹窗 -->
+<div id="loginOverlay" class="overlay hidden">
+    <div class="modal modal-sm">
+        <h3><i class="fas fa-sign-in-alt"></i> 请登录</h3>
+        <div class="field">
+            <label><i class="fas fa-id-card"></i> 学号 / 管理员账号</label>
+            <input type="text" id="loginUser" placeholder="例如: 2024001 或 admin" autocomplete="off">
+        </div>
+        <div class="field">
+            <label><i class="fas fa-lock"></i> 密码</label>
+            <input type="password" id="loginPass" placeholder="初始密码与学号相同">
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn" id="loginCancelBtn">取消</button>
+            <button type="button" class="btn btn-primary" id="loginDoBtn"><i class="fas fa-sign-in-alt"></i> 登录</button>
+        </div>
+        <div class="hint">测试账号：admin/admin，2024001/2024001</div>
+    </div>
+</div>
+
+<!-- 修改密码弹窗 -->
+<div id="pwdOverlay" class="overlay hidden">
+    <div class="modal modal-sm">
+        <h3><i class="fas fa-key"></i> 首次登录请修改密码</h3>
+        <div class="field">
+            <label>新密码</label>
+            <input type="password" id="pwdNew" placeholder="至少4位">
+        </div>
+        <div class="field">
+            <label>确认新密码</label>
+            <input type="password" id="pwdConfirm" placeholder="再次输入">
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-primary" id="pwdDoBtn"><i class="fas fa-check"></i> 确认修改</button>
+        </div>
+    </div>
+</div>
+
+<!-- 删除确认弹窗 -->
+<div id="deleteOverlay" class="overlay hidden">
+    <div class="modal delete-modal">
+        <h3><i class="fas fa-exclamation-triangle"></i> 确认删除</h3>
+        <div class="delete-warning">
+            <div class="lit-info">
+                <div style="margin-bottom:8px">
+                    <span class="label">论文标题</span><br>
+                    <span class="val" id="delTitle">—</span>
+                </div>
+                <div style="margin-bottom:8px">
+                    <span class="label">阅读者</span><br>
+                    <span class="val" id="delReader">—</span>
+                </div>
+                <div>
+                    <span class="label">提交人</span><br>
+                    <span class="val" id="delOwner">—</span>
+                </div>
+            </div>
+        </div>
+        <p style="font-size:.85rem;color:#a76b6b;margin-bottom:1.4rem">此操作不可撤销，删除后该文献记录将永久消失。</p>
+        <div class="delete-actions">
+            <button type="button" class="btn btn-cancel-del" id="delCancelBtn"><i class="fas fa-times"></i> 取消</button>
+            <button type="button" class="btn btn-confirm-del" id="delConfirmBtn" disabled><i class="fas fa-trash-alt"></i> 确认删除 <span id="delCountdown"></span></button>
+        </div>
+        <div class="del-countdown" id="delHint">请 3 秒后确认，防止误操作</div>
+    </div>
+</div>
+
+<!-- 录入/编辑弹窗 -->
+<div id="noteOverlay" class="overlay hidden">
+    <div class="modal">
+        <h3 id="noteTitle"><i class="fas fa-pen-fancy"></i> 录入文献与读书笔记</h3>
+        <div class="grid2">
+            <div class="field">
+                <label><i class="fas fa-user"></i> 阅读者姓名</label>
+                <input type="text" id="fReader">
+            </div>
+            <div class="field">
+                <label><i class="fas fa-calendar-day"></i> 阅读时间</label>
+                <input type="date" id="fDate">
+            </div>
+            <div class="field full">
+                <label><i class="fas fa-heading"></i> 论文标题</label>
+                <input type="text" id="fTitle">
+            </div>
+            <div class="field">
+                <label><i class="fas fa-user"></i> 作者 (逗号分隔)</label>
+                <input type="text" id="fAuthors">
+            </div>
+            <div class="field">
+                <label><i class="fas fa-calendar-alt"></i> 年份</label>
+                <input type="text" id="fYear">
+            </div>
+            <div class="field">
+                <label><i class="fas fa-book"></i> 期刊/会议</label>
+                <input type="text" id="fJournal">
+            </div>
+            <div class="field">
+                <label><i class="fas fa-hashtag"></i> 期号</label>
+                <input type="text" id="fIssue">
+            </div>
+            <div class="field">
+                <label><i class="fas fa-file-alt"></i> 页码/文章号</label>
+                <input type="text" id="fPages">
+            </div>
+            <div class="field full">
+                <label><i class="fas fa-link"></i> 文献来源（数据库）链接</label>
+                <input type="url" id="fSourceUrl" placeholder="例如: https://doi.org/10.xxxx 或 https://ieeexplore.ieee.org/document/xxxx">
+                <div class="tip"><i class="fas fa-info-circle"></i> 填写 DOI 或数据库页面链接，方便直接跳转查看原文</div>
+            </div>
+            <div class="field full">
+                <label><i class="fas fa-tags"></i> 关键词标签 (逗号分隔，用于筛选)</label>
+                <input type="text" id="fTags" placeholder="例如: 深度学习, 注意力机制, 图神经网络">
+            </div>
+            <div class="field full">
+                <label><i class="fas fa-quote-right"></i> 参考文献格式 (自动生成)</label>
+                <div class="ref-box">
+                    <span class="ref-text" id="refText">—</span>
+                    <button type="button" class="btn btn-sm" id="copyRefBtn"><i class="far fa-copy"></i> 复制</button>
+                </div>
+            </div>
+            <div class="field full">
+                <label><i class="fas fa-pen"></i> 阅读笔记 / 解读</label>
+                <textarea id="fNotes"></textarea>
+            </div>
+            <div class="field full">
+                <label><i class="fas fa-lightbulb"></i> 创新点</label>
+                <textarea id="fInnovation"></textarea>
+            </div>
+            <div class="field full">
+                <label><i class="fas fa-exclamation-triangle"></i> 不足之处</label>
+                <textarea id="fWeakness"></textarea>
+            </div>
+            <div class="field full">
+                <label><i class="fas fa-rocket"></i> 拓展想法</label>
+                <textarea id="fExtension"></textarea>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn" id="noteCancelBtn">取消</button>
+            <button type="button" class="btn btn-primary" id="noteSubmitBtn"><i class="fas fa-check-circle"></i> 提交</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+(function(){
+    var users = {
+        'admin': { password:'admin', role:'admin', name:'导师', needChangePwd:false },
+        '2024001': { password:'2024001', role:'student', name:'张三', needChangePwd:true },
+        '2024002': { password:'2024002', role:'student', name:'李四', needChangePwd:true }
+    };
+
+    var currentUser = null;
+    var editingId = null;
+    var pendingAction = null;
+    var deleteTargetId = null;
+    var deleteTimer = null;
+
+    var filterState = { keyword:'', reader:'', year:'', journal:'', owner:'', tag:'', sort:'date-desc' };
+
+    var litData = [
+        {
+            id:'lit-1', readerName:'张三', readDate:'2024-01-15',
+            title:'Attention Is All You Need',
+            authors:'Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N.',
+            year:'2017', journal:'NeurIPS', issue:'30', pages:'5998-6008',
+            sourceUrl:'https://arxiv.org/abs/1706.03762',
+            notes:'提出Transformer架构，完全基于自注意力机制，摒弃循环和卷积。',
+            innovation:'多头自注意力机制，并行计算效率高；位置编码替代循环结构。',
+            weakness:'对长序列的计算复杂度随长度平方增长，内存消耗大。',
+            extension:'可探索线性注意力、稀疏注意力以降低复杂度。',
+            ref:'Vaswani, A., et al. (2017). Attention Is All You Need. NeurIPS, 30, 5998-6008.',
+            tags:['Transformer','注意力机制','NLP'],
+            modifyCount:0, maxModify:3, adminAuthorized:false, submittedBy:'2024001'
+        },
+        {
+            id:'lit-2', readerName:'李四', readDate:'2024-02-20',
+            title:'Deep Residual Learning for Image Recognition',
+            authors:'He, K., Zhang, X., Ren, S., Sun, J.',
+            year:'2016', journal:'CVPR', issue:'1', pages:'770-778',
+            sourceUrl:'https://doi.org/10.1109/CVPR.2016.90',
+            notes:'提出残差网络ResNet，通过跳跃连接解决深层网络退化问题。',
+            innovation:'残差块设计，使训练超深网络(>100层)成为可能。',
+            weakness:'在极深网络(>1000层)时仍存在优化困难。',
+            extension:'结合注意力机制或动态网络结构。',
+            ref:'He, K., et al. (2016). Deep Residual Learning for Image Recognition. CVPR, 1, 770-778.',
+            tags:['ResNet','计算机视觉','深度学习'],
+            modifyCount:0, maxModify:3, adminAuthorized:false, submittedBy:'2024002'
+        },
+        {
+            id:'lit-3', readerName:'张三', readDate:'2024-03-10',
+            title:'BERT: Pre-training of Deep Bidirectional Transformers',
+            authors:'Devlin, J., Chang, M. W., Lee, K., Toutanova, K.',
+            year:'2019', journal:'NAACL', issue:'1', pages:'4171-4186',
+            sourceUrl:'https://aclanthology.org/N19-1423/',
+            notes:'提出BERT预训练模型，使用双向Transformer编码器。',
+            innovation:'掩码语言模型(MLM)和下一句预测(NSP)预训练任务。',
+            weakness:'预训练成本高，推理速度较慢。',
+            extension:'轻量化BERT、领域自适应预训练。',
+            ref:'Devlin, J., et al. (2019). BERT: Pre-training of Deep Bidirectional Transformers. NAACL, 1, 4171-4186.',
+            tags:['BERT','预训练','NLP'],
+            modifyCount:0, maxModify:3, adminAuthorized:false, submittedBy:'2024001'
+        }
+    ];
+
+    function $(id){ return document.getElementById(id); }
+
+    function toast(msg){
+        var t = $('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(t._timer);
+        t._timer = setTimeout(function(){ t.classList.remove('show'); }, 2000);
+    }
+
+    function esc(s){
+        if(s === null || s === undefined) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    }
+
+    function attrEsc(s){
+        if(s === null || s === undefined) return '';
+        return String(s).replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function highlight(text, keyword){
+        var safe = esc(text);
+        if(!keyword) return safe;
+        var kw = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        try {
+            return safe.replace(new RegExp('(' + kw + ')', 'gi'), '<mark>$1</mark>');
+        } catch(e){ return safe; }
+    }
+
+    function genRef(authors, year, title, journal, issue, pages){
+        var a = (authors||'').trim() || 'Unknown';
+        var parts = a.split(',').map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
+        var first = parts[0] || 'Unknown';
+        if(parts.length > 1) first += ', et al.';
+        var y = (year||'').trim() || 'n.d.';
+        var t = (title||'').trim() || 'Untitled';
+        var j = (journal||'').trim() || 'Unknown';
+        var extra = '';
+        if(issue && issue.trim()) extra += ', ' + issue.trim();
+        if(pages && pages.trim()) extra += ', ' + pages.trim();
+        return first + ' (' + y + '). ' + t + '. ' + j + extra + '.';
+    }
+
+    function copyText(text){
+        if(!text){ toast('没有内容可复制'); return; }
+        if(navigator.clipboard && navigator.clipboard.writeText){
+            navigator.clipboard.writeText(text).then(function(){ toast('已复制到剪贴板'); })
+            .catch(function(){ fallbackCopy(text); });
+        } else {
+            fallbackCopy(text);
+        }
+    }
+    function fallbackCopy(text){
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try{ document.execCommand('copy'); toast('已复制到剪贴板'); }
+        catch(e){ toast('复制失败'); }
+        document.body.removeChild(ta);
+    }
+
+    function cleanUrl(url){
+        if(!url) return '';
+        var u = String(url).trim();
+        if(!u) return '';
+        if(!/^[a-z][a-z0-9+.-]*:/i.test(u)){
+            if(/^[\w.-]+\.[a-z]{2,}/i.test(u)){
+                u = 'https://' + u;
+            } else {
+                return '';
+            }
+        }
+        if(!/^(https?|ftp|mailto):/i.test(u)){
+            return '';
+        }
+        return u;
+    }
+
+    function getFilteredData(){
+        var kw = filterState.keyword.toLowerCase().trim();
+        var result = litData.filter(function(item){
+            if(kw){
+                var haystack = [
+                    item.title, item.authors, item.journal, item.notes,
+                    item.innovation, item.weakness, item.extension,
+                    item.readerName, (item.tags||[]).join(' '), item.sourceUrl || ''
+                ].join(' ').toLowerCase();
+                if(haystack.indexOf(kw) === -1) return false;
+            }
+            if(filterState.reader && item.readerName !== filterState.reader) return false;
+            if(filterState.year && item.year !== filterState.year) return false;
+            if(filterState.journal && item.journal !== filterState.journal) return false;
+            if(filterState.owner && item.submittedBy !== filterState.owner) return false;
+            if(filterState.tag){
+                var tags = item.tags || [];
+                if(tags.indexOf(filterState.tag) === -1) return false;
+            }
+            return true;
+        });
+
+        var sortBy = filterState.sort;
+        result.sort(function(a,b){
+            if(sortBy === 'date-desc') return (b.readDate||'').localeCompare(a.readDate||'');
+            if(sortBy === 'date-asc') return (a.readDate||'').localeCompare(b.readDate||'');
+            if(sortBy === 'year-desc') return (b.year||'').localeCompare(a.year||'');
+            if(sortBy === 'year-asc') return (a.year||'').localeCompare(b.year||'');
+            if(sortBy === 'title-asc') return (a.title||'').localeCompare(b.title||'');
+            return 0;
+        });
+        return result;
+    }
+
+    function renderFilters(){
+        var readers = [], years = [], journals = [], owners = [];
+        var tagCount = {};
+        litData.forEach(function(item){
+            if(readers.indexOf(item.readerName) === -1) readers.push(item.readerName);
+            if(years.indexOf(item.year) === -1) years.push(item.year);
+            if(journals.indexOf(item.journal) === -1) journals.push(item.journal);
+            if(owners.indexOf(item.submittedBy) === -1) owners.push(item.submittedBy);
+            (item.tags||[]).forEach(function(t){ tagCount[t] = (tagCount[t] || 0) + 1; });
+        });
+        readers.sort(); years.sort().reverse(); journals.sort(); owners.sort();
+
+        var sel = $('filterReader');
+        sel.innerHTML = '<option value="">全部阅读者</option>';
+        readers.forEach(function(r){
+            sel.innerHTML += '<option value="' + esc(r) + '"' + (filterState.reader === r ? ' selected' : '') + '>' + esc(r) + '</option>';
+        });
+
+        sel = $('filterYear');
+        sel.innerHTML = '<option value="">全部年份</option>';
+        years.forEach(function(y){
+            sel.innerHTML += '<option value="' + esc(y) + '"' + (filterState.year === y ? ' selected' : '') + '>' + esc(y) + '</option>';
+        });
+
+        sel = $('filterJournal');
+        sel.innerHTML = '<option value="">全部期刊/会议</option>';
+        journals.forEach(function(j){
+            sel.innerHTML += '<option value="' + esc(j) + '"' + (filterState.journal === j ? ' selected' : '') + '>' + esc(j) + '</option>';
+        });
+
+        sel = $('filterOwner');
+        sel.innerHTML = '<option value="">全部提交人</option>';
+        owners.forEach(function(o){
+            var name = (users[o] && users[o].name) ? users[o].name : o;
+            sel.innerHTML += '<option value="' + esc(o) + '"' + (filterState.owner === o ? ' selected' : '') + '>' + esc(name) + '</option>';
+        });
+
+        var tagBar = $('tagBar');
+        var tagNames = Object.keys(tagCount).sort();
+        if(tagNames.length === 0){
+            tagBar.innerHTML = '<span style="font-size:.78rem;color:#a8bcd0">暂无标签</span>';
+        } else {
+            var html = '<span style="font-size:.78rem;color:#5b7a98;font-weight:600;display:flex;align-items:center;gap:5px;margin-right:4px"><i class="fas fa-tags"></i> 标签：</span>';
+            html += '<button class="tag-btn' + (filterState.tag === '' ? ' active' : '') + '" data-tag="">全部 <span class="count">' + litData.length + '</span></button>';
+            tagNames.forEach(function(t){
+                html += '<button class="tag-btn' + (filterState.tag === t ? ' active' : '') + '" data-tag="' + esc(t) + '">' + esc(t) + ' <span class="count">' + tagCount[t] + '</span></button>';
+            });
+            tagBar.innerHTML = html;
+        }
+    }
+
+    function renderList(){
+        var data = getFilteredData();
+        var listDiv = $('litList');
+        var emptyDiv = $('emptyMsg');
+
+        $('statChip').innerHTML = '<i class="fas fa-file-alt"></i> 共 ' + data.length + ' 篇';
+
+        if(data.length === 0){
+            listDiv.innerHTML = '';
+            emptyDiv.style.display = 'block';
+            return;
+        }
+        emptyDiv.style.display = 'none';
+
+        var kw = filterState.keyword.trim();
+        var html = '';
+        data.forEach(function(item){
+            var isAdmin = currentUser && currentUser.role === 'admin';
+            var isOwner = currentUser && currentUser.username === item.submittedBy;
+            var canEdit = false;
+            if(isAdmin) canEdit = true;
+            else if(isOwner) canEdit = (item.modifyCount < item.maxModify || item.adminAuthorized);
+
+            var actions = '';
+            actions += '<button class="btn btn-sm" data-act="copy" data-id="' + item.id + '"><i class="far fa-copy"></i> 复制引用</button>';
+
+            if(isAdmin){
+                actions += '<button class="btn btn-sm" data-act="edit" data-id="' + item.id + '"><i class="fas fa-edit"></i> 修改</button>';
+                actions += '<button class="btn btn-sm btn-danger" data-act="delete" data-id="' + item.id + '"><i class="fas fa-trash-alt"></i> 删除</button>';
+                if(!item.adminAuthorized){
+                    actions += '<button class="btn btn-sm" data-act="authorize" data-id="' + item.id + '"><i class="fas fa-key"></i> 授权修改</button>';
+                } else {
+                    actions += '<span class="counter" style="background:#e3f2e9;color:#2e7d5e"><i class="fas fa-unlock-alt"></i> 已授权</span>';
+                }
+            } else if(isOwner){
+                if(canEdit){
+                    actions += '<button class="btn btn-sm" data-act="edit" data-id="' + item.id + '"><i class="fas fa-edit"></i> 修改 (' + item.modifyCount + '/' + item.maxModify + ')</button>';
+                } else {
+                    actions += '<span class="locked"><i class="fas fa-lock"></i> 修改次数已用完</span>';
+                }
+            } else {
+                actions += '<span class="locked"><i class="fas fa-lock"></i> 已锁定</span>';
+            }
+
+            var tagsHtml = '';
+            if(item.tags && item.tags.length){
+                tagsHtml = item.tags.map(function(t){
+                    return '<span class="tag">' + highlight(t, kw) + '</span>';
+                }).join('');
+            }
+
+            // ★★★★★★ 最终兼容方案 ★★★★★★
+            // 1) 用原生 <a href="真实URL"> —— 浏览器绝对认识
+            // 2) 加 target="_blank" —— 让浏览器自己决定新窗口
+            // 3) 加 rel="noopener noreferrer" —— 安全
+            // 4) 加 onclick 的兜底：如果浏览器不认 target，用 setTimeout 延迟打开
+            //    （setTimeout 里调用 window.open，360有时会因为不是立即执行而放行）
+            // 5) 加 oncontextmenu 提示用户"右键可新窗口打开"
+            var srcHtml = '';
+            var url = cleanUrl(item.sourceUrl);
+            if(url){
+                var displayUrl = url.replace(/^https?:\/\//, '');
+                if(displayUrl.length > 60) displayUrl = displayUrl.substring(0, 60) + '...';
+                // 注意：URL 里的单引号可能破坏 onclick 字符串，需要转义
+                var urlJs = url.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                srcHtml = '<div class="src-row">'
+                    + '<a class="src-link" '
+                    +   'href="' + attrEsc(url) + '" '
+                    +   'target="_blank" '
+                    +   'rel="noopener noreferrer" '
+                    +   'data-url="' + attrEsc(url) + '" '
+                    +   'title="点击打开链接（如无法新窗口打开，请右键 → 在新标签页中打开）" '
+                    +   'onclick="var _u=\'' + urlJs + '\';try{var _w=window.open(_u,\'_blank\');if(_w){_w.opener=null;return false;}}catch(e){}" '
+                    + '>'
+                    +   '<i class="fas fa-external-link-alt"></i>'
+                    +   '<span class="url-text">' + esc(displayUrl) + '</span>'
+                    + '</a>'
+                    + '<button type="button" class="src-copy-btn" data-act="copy-url" data-id="' + item.id + '" title="复制链接"><i class="far fa-copy"></i> 复制链接</button>'
+                    + '</div>';
+            }
+
+            html += '<div class="lit-card" data-id="' + item.id + '">'
+                + '<div class="lit-header">'
+                +   '<div class="lit-title" data-toggle="' + item.id + '">'
+                +     '<i class="fas fa-chevron-down toggle-icon"></i>'
+                +     '<span>' + highlight(item.title, kw) + '</span>'
+                +   '</div>'
+                +   '<div class="lit-badge"><i class="fas fa-user"></i> ' + highlight(item.readerName, kw) + ' · ' + esc(item.readDate) + '</div>'
+                + '</div>'
+                + '<div class="lit-body">'
+                +   '<div class="lit-meta">'
+                +     '<span><i class="fas fa-user"></i> ' + highlight(item.authors, kw) + '</span>'
+                +     '<span><i class="fas fa-calendar-alt"></i> ' + highlight(item.year, kw) + '</span>'
+                +     '<span><i class="fas fa-book"></i> ' + highlight(item.journal, kw) + '</span>'
+                +     '<span><i class="fas fa-hashtag"></i> 期号: ' + highlight(item.issue, kw) + '</span>'
+                +     '<span><i class="fas fa-file-alt"></i> 页码: ' + highlight(item.pages, kw) + '</span>'
+                +     tagsHtml
+                +   '</div>'
+                +   srcHtml
+                +   '<div class="lit-ref"><span>' + esc(item.ref) + '</span></div>'
+                +   '<div class="lit-notes">'
+                +     '<div class="note-block"><strong><i class="fas fa-pen"></i> 阅读笔记</strong><p>' + (highlight(item.notes, kw) || '—') + '</p></div>'
+                +     '<div class="note-block"><strong><i class="fas fa-lightbulb"></i> 创新点</strong><p>' + (highlight(item.innovation, kw) || '—') + '</p></div>'
+                +     '<div class="note-block"><strong><i class="fas fa-exclamation-triangle"></i> 不足之处</strong><p>' + (highlight(item.weakness, kw) || '—') + '</p></div>'
+                +     '<div class="note-block"><strong><i class="fas fa-rocket"></i> 拓展想法</strong><p>' + (highlight(item.extension, kw) || '—') + '</p></div>'
+                +   '</div>'
+                +   '<div class="lit-footer"><div></div><div class="lit-actions">' + actions + '</div></div>'
+                + '</div>'
+                + '</div>';
+        });
+        listDiv.innerHTML = html;
+    }
+
+    function renderUserArea(){
+        var area = $('userArea');
+        if(currentUser){
+            area.innerHTML =
+                '<span class="user-chip"><i class="fas fa-user-circle"></i> ' + esc(currentUser.name) +
+                ' (' + (currentUser.role==='admin'?'管理员':'学生') + ')</span>' +
+                '<button class="btn btn-primary" id="btnNewNote"><i class="fas fa-pen"></i> 写读书笔记</button>' +
+                '<button class="btn" id="btnLogout"><i class="fas fa-sign-out-alt"></i> 退出</button>';
+            $('btnNewNote').addEventListener('click', function(){ openNoteForNew(); });
+            $('btnLogout').addEventListener('click', function(){
+                currentUser = null;
+                editingId = null;
+                renderUserArea();
+                renderList();
+                toast('已退出登录');
+            });
+        } else {
+            area.innerHTML =
+                '<span class="user-chip"><i class="fas fa-user"></i> 访客浏览</span>' +
+                '<button class="btn btn-primary" id="btnNewNote"><i class="fas fa-pen"></i> 写读书笔记</button>' +
+                '<button class="btn" id="btnAdminLogin"><i class="fas fa-user-shield"></i> 管理员登录</button>';
+            $('btnNewNote').addEventListener('click', function(){ openNoteForNew(); });
+            $('btnAdminLogin').addEventListener('click', function(){
+                pendingAction = 'admin';
+                showLogin();
+            });
+        }
+    }
+
+    $('searchInput').addEventListener('input', function(){ filterState.keyword = this.value; renderList(); });
+    $('filterReader').addEventListener('change', function(){ filterState.reader = this.value; renderList(); });
+    $('filterYear').addEventListener('change', function(){ filterState.year = this.value; renderList(); });
+    $('filterJournal').addEventListener('change', function(){ filterState.journal = this.value; renderList(); });
+    $('filterOwner').addEventListener('change', function(){ filterState.owner = this.value; renderList(); });
+    $('sortBy').addEventListener('change', function(){ filterState.sort = this.value; renderList(); });
+
+    $('tagBar').addEventListener('click', function(e){
+        var btn = e.target.closest('.tag-btn');
+        if(!btn) return;
+        filterState.tag = btn.getAttribute('data-tag');
+        renderFilters();
+        renderList();
+    });
+
+    $('btnExpandAll').addEventListener('click', function(){
+        this.classList.add('active');
+        $('btnCollapseAll').classList.remove('active');
+        document.querySelectorAll('.lit-card').forEach(function(c){ c.classList.remove('collapsed'); });
+    });
+    $('btnCollapseAll').addEventListener('click', function(){
+        this.classList.add('active');
+        $('btnExpandAll').classList.remove('active');
+        document.querySelectorAll('.lit-card').forEach(function(c){ c.classList.add('collapsed'); });
+    });
+
+    // ★ 列表点击：不干扰链接（链接自己的 onclick 处理）
+    $('litList').addEventListener('click', function(e){
+        // 如果点击的是链接或它的子元素，不处理（让 <a> 自己跳转 / onclick 处理）
+        if(e.target.closest('a.src-link')) return;
+
+        var btn = e.target.closest('button[data-act]');
+        if(btn){
+            var act = btn.getAttribute('data-act');
+            var id = btn.getAttribute('data-id');
+            var item = null;
+            for(var i=0;i<litData.length;i++){ if(litData[i].id === id){ item = litData[i]; break; } }
+            if(!item) return;
+
+            if(act === 'copy'){ copyText(item.ref); return; }
+            if(act === 'copy-url'){ copyText(item.sourceUrl); return; }
+            if(act === 'delete'){
+                if(!currentUser || currentUser.role !== 'admin'){ toast('只有管理员可以删除'); return; }
+                openDeleteConfirm(item);
+                return;
+            }
+            if(!currentUser){ pendingAction = { type: act, id: id }; showLogin(); return; }
+            doAction(act, item);
+            return;
+        }
+
+        var titleEl = e.target.closest('.lit-title[data-toggle]');
+        if(titleEl){
+            var card = titleEl.closest('.lit-card');
+            if(card) card.classList.toggle('collapsed');
+        }
+    });
+
+    function doAction(act, item){
+        var isAdmin = currentUser.role === 'admin';
+        var isOwner = currentUser.username === item.submittedBy;
+
+        if(act === 'edit'){
+            if(!isAdmin && !isOwner){ toast('无权修改'); return; }
+            if(!isAdmin && isOwner && item.modifyCount >= item.maxModify && !item.adminAuthorized){
+                toast('修改次数已用完，请联系管理员授权');
+                return;
+            }
+            openNoteForEdit(item);
+            return;
+        }
+        if(act === 'authorize'){
+            if(!isAdmin){ toast('只有管理员可以授权'); return; }
+            item.adminAuthorized = true;
+            renderList();
+            toast('已授权修改');
+            return;
+        }
+    }
+
+    function openDeleteConfirm(item){
+        deleteTargetId = item.id;
+        $('delTitle').textContent = item.title;
+        $('delReader').textContent = item.readerName;
+        var ownerName = (users[item.submittedBy] && users[item.submittedBy].name) ? users[item.submittedBy].name : item.submittedBy;
+        $('delOwner').textContent = ownerName;
+        $('deleteOverlay').classList.remove('hidden');
+
+        var confirmBtn = $('delConfirmBtn');
+        confirmBtn.disabled = true;
+        var count = 3;
+        $('delCountdown').textContent = '(' + count + 's)';
+        $('delHint').textContent = '请 ' + count + ' 秒后确认，防止误操作';
+        clearInterval(deleteTimer);
+        deleteTimer = setInterval(function(){
+            count--;
+            if(count <= 0){
+                clearInterval(deleteTimer);
+                confirmBtn.disabled = false;
+                $('delCountdown').textContent = '';
+                $('delHint').textContent = '现在可以确认删除了';
+            } else {
+                $('delCountdown').textContent = '(' + count + 's)';
+                $('delHint').textContent = '请 ' + count + ' 秒后确认，防止误操作';
+            }
+        }, 1000);
+    }
+
+    $('delCancelBtn').addEventListener('click', function(){
+        clearInterval(deleteTimer);
+        deleteTargetId = null;
+        $('deleteOverlay').classList.add('hidden');
+        $('delConfirmBtn').disabled = true;
+    });
+
+    $('delConfirmBtn').addEventListener('click', function(){
+        if(!deleteTargetId){ return; }
+        if(!currentUser || currentUser.role !== 'admin'){
+            toast('只有管理员可以删除');
+            clearInterval(deleteTimer);
+            deleteTargetId = null;
+            $('deleteOverlay').classList.add('hidden');
+            return;
+        }
+        var targetId = deleteTargetId;
+        var target = null;
+        for(var i=0;i<litData.length;i++){ if(litData[i].id === targetId){ target = litData[i]; break; } }
+        litData = litData.filter(function(x){ return x.id !== targetId; });
+        clearInterval(deleteTimer);
+        deleteTargetId = null;
+        $('deleteOverlay').classList.add('hidden');
+        $('delConfirmBtn').disabled = true;
+        renderFilters();
+        renderList();
+        toast('已删除「' + (target ? target.title : '') + '」');
+    });
+
+    function showLogin(){
+        $('loginUser').value = '';
+        $('loginPass').value = '';
+        $('loginOverlay').classList.remove('hidden');
+        setTimeout(function(){ $('loginUser').focus(); }, 100);
+    }
+    function hideLogin(){ $('loginOverlay').classList.add('hidden'); }
+
+    $('loginCancelBtn').addEventListener('click', function(){ pendingAction = null; hideLogin(); });
+
+    $('loginDoBtn').addEventListener('click', function(){
+        var u = $('loginUser').value.trim();
+        var p = $('loginPass').value.trim();
+        if(!u || !p){ toast('请输入账号和密码'); return; }
+        var user = users[u];
+        if(!user || user.password !== p){ toast('账号或密码错误'); return; }
+
+        currentUser = { username: u, role: user.role, name: user.name };
+        hideLogin();
+
+        if(user.needChangePwd){
+            $('pwdOverlay').classList.remove('hidden');
+            $('pwdNew').value = '';
+            $('pwdConfirm').value = '';
+        } else {
+            afterLogin();
+        }
+    });
+
+    $('pwdDoBtn').addEventListener('click', function(){
+        var p1 = $('pwdNew').value.trim();
+        var p2 = $('pwdConfirm').value.trim();
+        if(!p1 || p1.length < 4){ toast('密码至少4位'); return; }
+        if(p1 !== p2){ toast('两次密码不一致'); return; }
+        users[currentUser.username].password = p1;
+        users[currentUser.username].needChangePwd = false;
+        $('pwdOverlay').classList.add('hidden');
+        afterLogin();
+    });
+
+    function afterLogin(){
+        renderUserArea();
+        renderFilters();
+        renderList();
+        toast('登录成功');
+
+        if(pendingAction){
+            var pa = pendingAction;
+            pendingAction = null;
+            if(pa === 'admin') return;
+            if(pa === 'new'){ openNoteForNew(); return; }
+            if(pa.type){
+                var item = null;
+                for(var i=0;i<litData.length;i++){ if(litData[i].id === pa.id){ item = litData[i]; break; } }
+                if(item) doAction(pa.type, item);
+            }
+        }
+    }
+
+    function openNoteForNew(){
+        if(!currentUser){ pendingAction = 'new'; showLogin(); return; }
+        editingId = null;
+        $('noteTitle').innerHTML = '<i class="fas fa-pen-fancy"></i> 录入文献与读书笔记';
+        $('fReader').value = currentUser.name;
+        $('fDate').value = new Date().toISOString().slice(0,10);
+        $('fTitle').value = '';
+        $('fAuthors').value = '';
+        $('fYear').value = '';
+        $('fJournal').value = '';
+        $('fIssue').value = '';
+        $('fPages').value = '';
+        $('fSourceUrl').value = '';
+        $('fTags').value = '';
+        $('fNotes').value = '';
+        $('fInnovation').value = '';
+        $('fWeakness').value = '';
+        $('fExtension').value = '';
+        updateRef();
+        $('noteOverlay').classList.remove('hidden');
+    }
+
+    function openNoteForEdit(item){
+        editingId = item.id;
+        $('noteTitle').innerHTML = '<i class="fas fa-edit"></i> 修改文献记录';
+        $('fReader').value = item.readerName;
+        $('fDate').value = item.readDate;
+        $('fTitle').value = item.title;
+        $('fAuthors').value = item.authors;
+        $('fYear').value = item.year;
+        $('fJournal').value = item.journal;
+        $('fIssue').value = item.issue === '—' ? '' : item.issue;
+        $('fPages').value = item.pages === '—' ? '' : item.pages;
+        $('fSourceUrl').value = item.sourceUrl || '';
+        $('fTags').value = (item.tags||[]).join(', ');
+        $('fNotes').value = item.notes === '—' ? '' : item.notes;
+        $('fInnovation').value = item.innovation === '—' ? '' : item.innovation;
+        $('fWeakness').value = item.weakness === '—' ? '' : item.weakness;
+        $('fExtension').value = item.extension === '—' ? '' : item.extension;
+        updateRef();
+        $('noteOverlay').classList.remove('hidden');
+    }
+
+    function updateRef(){
+        $('refText').textContent = genRef(
+            $('fAuthors').value, $('fYear').value, $('fTitle').value,
+            $('fJournal').value, $('fIssue').value, $('fPages').value
+        );
+    }
+
+    ['fAuthors','fYear','fTitle','fJournal','fIssue','fPages'].forEach(function(id){
+        $(id).addEventListener('input', updateRef);
+    });
+
+    $('copyRefBtn').addEventListener('click', function(){ copyText($('refText').textContent); });
+    $('noteCancelBtn').addEventListener('click', function(){ $('noteOverlay').classList.add('hidden'); });
+
+    $('noteSubmitBtn').addEventListener('click', function(){
+        var reader = $('fReader').value.trim();
+        var date = $('fDate').value;
+        var title = $('fTitle').value.trim();
+        var authors = $('fAuthors').value.trim();
+        var year = $('fYear').value.trim();
+        var journal = $('fJournal').value.trim();
+        var issue = $('fIssue').value.trim();
+        var pages = $('fPages').value.trim();
+        var sourceUrl = $('fSourceUrl').value.trim();
+        var tagsRaw = $('fTags').value.trim();
+        var notes = $('fNotes').value.trim();
+        var innovation = $('fInnovation').value.trim();
+        var weakness = $('fWeakness').value.trim();
+        var extension = $('fExtension').value.trim();
+
+        if(!reader || !date || !title || !authors || !year || !journal){
+            toast('请填写必填项：阅读者、时间、标题、作者、年份、期刊');
+            return;
+        }
+
+        if(sourceUrl && !cleanUrl(sourceUrl)){
+            toast('文献来源链接格式不正确，请填写有效的 URL');
+            return;
+        }
+
+        var tags = tagsRaw ? tagsRaw.split(/[,，]/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length>0; }) : [];
+        var ref = genRef(authors, year, title, journal, issue, pages);
+
+        if(editingId){
+            var item = null;
+            for(var i=0;i<litData.length;i++){ if(litData[i].id === editingId){ item = litData[i]; break; } }
+            if(!item){ toast('记录不存在'); return; }
+
+            var isAdmin = currentUser.role === 'admin';
+            var isOwner = currentUser.username === item.submittedBy;
+
+            if(!isAdmin && isOwner){
+                if(item.modifyCount >= item.maxModify && !item.adminAuthorized){
+                    toast('修改次数已用完');
+                    return;
+                }
+                item.modifyCount += 1;
+            }
+
+            item.readerName = reader;
+            item.readDate = date;
+            item.title = title;
+            item.authors = authors;
+            item.year = year;
+            item.journal = journal;
+            item.issue = issue || '—';
+            item.pages = pages || '—';
+            item.sourceUrl = sourceUrl;
+            item.tags = tags;
+            item.notes = notes || '—';
+            item.innovation = innovation || '—';
+            item.weakness = weakness || '—';
+            item.extension = extension || '—';
+            item.ref = ref;
+            toast('修改成功');
+        } else {
+            litData.push({
+                id: 'lit-' + Date.now() + '-' + Math.random().toString(36).substr(2,6),
+                readerName: reader, readDate: date, title: title,
+                authors: authors, year: year, journal: journal,
+                issue: issue || '—', pages: pages || '—',
+                sourceUrl: sourceUrl,
+                tags: tags,
+                notes: notes || '—', innovation: innovation || '—',
+                weakness: weakness || '—', extension: extension || '—',
+                ref: ref, modifyCount: 0, maxModify: 3,
+                adminAuthorized: false, submittedBy: currentUser.username
+            });
+            toast('提交成功');
+        }
+
+        $('noteOverlay').classList.add('hidden');
+        renderFilters();
+        renderList();
+    });
+
+    renderUserArea();
+    renderFilters();
+    renderList();
+})();
+</script>
+</body>
+</html>
