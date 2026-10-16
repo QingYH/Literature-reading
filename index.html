@@ -71,7 +71,6 @@ body{background:#f5f7fc;padding:2rem 1rem;min-height:100vh}
 .lit-meta i{width:15px;color:#6b8db0}
 .lit-meta .tag{background:#fff;border:1px solid #d5e3f0;padding:.15rem .7rem;border-radius:20px;font-size:.72rem;color:#42678c;font-weight:600}
 
-/* 链接行 */
 .src-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:.6rem}
 .src-link{display:inline-flex;align-items:center;gap:6px;background:#e7f1fb;border:1.5px solid #a9ccec;padding:.45rem 1.1rem;border-radius:40px;font-size:.78rem;color:#1a5fa0;font-weight:600;text-decoration:none;transition:.15s;max-width:100%;cursor:pointer;font-family:inherit}
 .src-link:hover{background:#2c5f8a;border-color:#2c5f8a;color:#fff;box-shadow:0 4px 10px -2px rgba(44,95,138,.4);text-decoration:none}
@@ -131,6 +130,11 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
 .btn-confirm-del:disabled{background:#ccc;border-color:#ccc;cursor:not-allowed}
 .del-countdown{font-size:.75rem;color:#b15e5e;margin-top:.6rem}
 
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.9);display:flex;justify-content:center;align-items:center;z-index:3000;flex-direction:column;gap:1rem}
+.loading-overlay.hidden{display:none}
+.spinner{width:40px;height:40px;border:4px solid #dfe8f2;border-top-color:#2c5f8a;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
 @media(max-width:700px){
     .grid2{grid-template-columns:1fr}
     .grid2 .full{grid-column:span 1}
@@ -141,6 +145,12 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
 </style>
 </head>
 <body>
+
+<!-- 加载动画 -->
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <div style="color:#2c5f8a;font-weight:600;">正在连接数据库...</div>
+</div>
 
 <div class="app-container">
     <div class="top-bar">
@@ -195,18 +205,18 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
     <div class="modal modal-sm">
         <h3><i class="fas fa-sign-in-alt"></i> 请登录</h3>
         <div class="field">
-            <label><i class="fas fa-id-card"></i> 学号（后8位数字） / 管理员账号</label>
+            <label><i class="fas fa-id-card"></i> 学号 / 管理员账号</label>
             <input type="text" id="loginUser" placeholder="例如: 2024001 或 admin" autocomplete="off">
         </div>
         <div class="field">
             <label><i class="fas fa-lock"></i> 密码</label>
-            <input type="password" id="loginPass" placeholder="初始密码与学号后8位数字相同">
+            <input type="password" id="loginPass" placeholder="初始密码与学号相同">
         </div>
         <div class="modal-actions">
             <button type="button" class="btn" id="loginCancelBtn">取消</button>
             <button type="button" class="btn btn-primary" id="loginDoBtn"><i class="fas fa-sign-in-alt"></i> 登录</button>
         </div>
-        <div class="hint">测试账号：admin/admin，2024001/2024001</div>
+        <div class="hint"></div>
     </div>
 </div>
 
@@ -336,47 +346,39 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
 
 <div id="toast" class="toast"></div>
 
+<!-- ============================================================ -->
+<!-- Supabase JS 客户端 (CDN) -->
+<!-- ============================================================ -->
+<script src="https://cdn.jsdelivr.net.cn/npm/@supabase/supabase-js@2"></script>
+
 <script>
 (function(){
-    var users = {
-        'admin': { password:'admin', role:'090722', name:'导师', needChangePwd:false },
-        '24060035': { password:'24060035', role:'student', name:'吴曼', needChangePwd:true },
-        '24060029': { password:'24060029', role:'student', name:'徐磊', needChangePwd:true },
-        '25060030': { password:'25060030', role:'student', name:'刘培煜', needChangePwd:true },
-        '24060037': { password:'24060037', role:'student', name:'洪彪', needChangePwd:true },
-        '25060060': { password:'25060060', role:'student', name:'陈宗耀', needChangePwd:true },
-        '26220003': { password:'26220003', role:'student', name:'汪晨', needChangePwd:true },
-        '26220002': { password:'26220002', role:'student', name:'郭淑涵', needChangePwd:true },
-        '26220021': { password:'26220021', role:'student', name:'徐秋雨', needChangePwd:true },
-        '24060015': { password:'24060015', role:'student', name:'张秋月', needChangePwd:true },
-        '25060031': { password:'25060031', role:'student', name:'张思远', needChangePwd:true }
-    };
+    // ============================================================
+    // ★★★ 配置区域：将下面两个值替换为你自己的 Supabase 凭据 ★★★
+    // ============================================================
+    var SUPABASE_URL = 'https://egujxwbjondlygavghve.supabase.co';
+    var SUPABASE_ANON_KEY = 'sb_publishable_gQeNOMayZCqaQAxijWFOJQ_MeJdBSJz';
 
-    var currentUser = null;
+    // 初始化 Supabase 客户端
+    var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ============================================================
+    // 全局状态
+    // ============================================================
+    var users = {};         // 用户表 { username: {password, role, name, needChangePwd} }
+    var litData = [];       // 文献记录数组
+    var currentUser = null; // 当前登录用户
     var editingId = null;
     var pendingAction = null;
     var deleteTargetId = null;
     var deleteTimer = null;
+    var serverReady = false;
 
     var filterState = { keyword:'', reader:'', year:'', journal:'', owner:'', tag:'', sort:'date-desc' };
 
-    var litData = [
-        {
-            id:'lit-1', readerName:'张三', readDate:'2024-01-15',
-            title:'Attention Is All You Need',
-            authors:'Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N.',
-            year:'2017', journal:'NeurIPS', issue:'30', pages:'5998-6008',
-            sourceUrl:'https://arxiv.org/abs/1706.03762',
-            notes:'提出Transformer架构，完全基于自注意力机制，摒弃循环和卷积。',
-            innovation:'多头自注意力机制，并行计算效率高；位置编码替代循环结构。',
-            weakness:'对长序列的计算复杂度随长度平方增长，内存消耗大。',
-            extension:'可探索线性注意力、稀疏注意力以降低复杂度。',
-            ref:'Vaswani, A., et al. (2017). Attention Is All You Need. NeurIPS, 30, 5998-6008.',
-            tags:['Transformer','注意力机制','NLP'],
-            modifyCount:0, maxModify:3, adminAuthorized:false, submittedBy:'2024001'
-        }
-    ];
-
+    // ============================================================
+    // 工具函数
+    // ============================================================
     function $(id){ return document.getElementById(id); }
 
     function toast(msg){
@@ -425,16 +427,13 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
         if(navigator.clipboard && navigator.clipboard.writeText){
             navigator.clipboard.writeText(text).then(function(){ toast('已复制到剪贴板'); })
             .catch(function(){ fallbackCopy(text); });
-        } else {
-            fallbackCopy(text);
-        }
+        } else { fallbackCopy(text); }
     }
     function fallbackCopy(text){
         var ta = document.createElement('textarea');
         ta.value = text;
         ta.style.position = 'fixed'; ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.select();
+        document.body.appendChild(ta); ta.select();
         try{ document.execCommand('copy'); toast('已复制到剪贴板'); }
         catch(e){ toast('复制失败'); }
         document.body.removeChild(ta);
@@ -445,18 +444,148 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
         var u = String(url).trim();
         if(!u) return '';
         if(!/^[a-z][a-z0-9+.-]*:/i.test(u)){
-            if(/^[\w.-]+\.[a-z]{2,}/i.test(u)){
-                u = 'https://' + u;
-            } else {
-                return '';
-            }
+            if(/^[\w.-]+\.[a-z]{2,}/i.test(u)){ u = 'https://' + u; }
+            else { return ''; }
         }
-        if(!/^(https?|ftp|mailto):/i.test(u)){
-            return '';
-        }
+        if(!/^(https?|ftp|mailto):/i.test(u)){ return ''; }
         return u;
     }
 
+    // ============================================================
+    // 数据库操作函数 (Supabase)
+    // ============================================================
+
+    // 从 Supabase 加载所有数据
+    async function loadFromSupabase(){
+        try {
+            var [usersRes, litRes] = await Promise.all([
+                supabase.from('app_users').select('*'),
+                supabase.from('literature').select('*').order('created_at', { ascending: false })
+            ]);
+
+            if (usersRes.error) throw usersRes.error;
+            if (litRes.error) throw litRes.error;
+
+            // 将用户数组转为对象 { username: {...} }
+            users = {};
+            (usersRes.data || []).forEach(function(u){
+                users[u.username] = {
+                    password: u.password,
+                    role: u.role,
+                    name: u.name,
+                    needChangePwd: u.need_change_pwd
+                };
+            });
+
+            // 将文献数据字段名从 snake_case 转为 camelCase
+            litData = (litRes.data || []).map(function(row){
+                return {
+                    id: row.id,
+                    readerName: row.reader_name,
+                    readDate: row.read_date,
+                    title: row.title,
+                    authors: row.authors,
+                    year: row.year,
+                    journal: row.journal,
+                    issue: row.issue,
+                    pages: row.pages,
+                    sourceUrl: row.source_url,
+                    notes: row.notes,
+                    innovation: row.innovation,
+                    weakness: row.weakness,
+                    extension: row.extension,
+                    ref: row.ref,
+                    tags: row.tags || [],
+                    modifyCount: row.modify_count,
+                    maxModify: row.max_modify,
+                    adminAuthorized: row.admin_authorized,
+                    submittedBy: row.submitted_by
+                };
+            });
+
+            serverReady = true;
+            console.log('✅ 数据已从 Supabase 加载', { 用户数: Object.keys(users).length, 文献数: litData.length });
+        } catch (e){
+            console.error('❌ 加载数据失败:', e);
+            alert('⚠️ 无法连接到 Supabase 数据库，请检查网络或配置。');
+        }
+    }
+
+    // 新增文献
+    async function insertLiterature(item){
+        var row = {
+            id: item.id,
+            reader_name: item.readerName,
+            read_date: item.readDate,
+            title: item.title,
+            authors: item.authors,
+            year: item.year,
+            journal: item.journal,
+            issue: item.issue,
+            pages: item.pages,
+            source_url: item.sourceUrl,
+            notes: item.notes,
+            innovation: item.innovation,
+            weakness: item.weakness,
+            extension: item.extension,
+            ref: item.ref,
+            tags: item.tags,
+            modify_count: item.modifyCount,
+            max_modify: item.maxModify,
+            admin_authorized: item.adminAuthorized,
+            submitted_by: item.submittedBy
+        };
+        var result = await supabase.from('literature').insert(row);
+        if (result.error) throw result.error;
+        return result;
+    }
+
+    // 更新文献
+    async function updateLiterature(id, updates){
+        var row = {};
+        if (updates.readerName !== undefined) row.reader_name = updates.readerName;
+        if (updates.readDate !== undefined) row.read_date = updates.readDate;
+        if (updates.title !== undefined) row.title = updates.title;
+        if (updates.authors !== undefined) row.authors = updates.authors;
+        if (updates.year !== undefined) row.year = updates.year;
+        if (updates.journal !== undefined) row.journal = updates.journal;
+        if (updates.issue !== undefined) row.issue = updates.issue;
+        if (updates.pages !== undefined) row.pages = updates.pages;
+        if (updates.sourceUrl !== undefined) row.source_url = updates.sourceUrl;
+        if (updates.notes !== undefined) row.notes = updates.notes;
+        if (updates.innovation !== undefined) row.innovation = updates.innovation;
+        if (updates.weakness !== undefined) row.weakness = updates.weakness;
+        if (updates.extension !== undefined) row.extension = updates.extension;
+        if (updates.ref !== undefined) row.ref = updates.ref;
+        if (updates.tags !== undefined) row.tags = updates.tags;
+        if (updates.modifyCount !== undefined) row.modify_count = updates.modifyCount;
+        if (updates.adminAuthorized !== undefined) row.admin_authorized = updates.adminAuthorized;
+
+        var result = await supabase.from('literature').update(row).eq('id', id);
+        if (result.error) throw result.error;
+        return result;
+    }
+
+    // 删除文献
+    async function deleteLiterature(id){
+        var result = await supabase.from('literature').delete().eq('id', id);
+        if (result.error) throw result.error;
+        return result;
+    }
+
+    // 更新用户密码
+    async function updateUserPassword(username, newPassword, needChangePwd){
+        var result = await supabase.from('app_users').update({
+            password: newPassword,
+            need_change_pwd: needChangePwd
+        }).eq('username', username);
+        if (result.error) throw result.error;
+        return result;
+    }
+
+    // ============================================================
+    // 数据筛选与渲染
+    // ============================================================
     function getFilteredData(){
         var kw = filterState.keyword.toLowerCase().trim();
         var result = litData.filter(function(item){
@@ -593,19 +722,11 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
                 }).join('');
             }
 
-            // ★★★★★★ 最终兼容方案 ★★★★★★
-            // 1) 用原生 <a href="真实URL"> —— 浏览器绝对认识
-            // 2) 加 target="_blank" —— 让浏览器自己决定新窗口
-            // 3) 加 rel="noopener noreferrer" —— 安全
-            // 4) 加 onclick 的兜底：如果浏览器不认 target，用 setTimeout 延迟打开
-            //    （setTimeout 里调用 window.open，360有时会因为不是立即执行而放行）
-            // 5) 加 oncontextmenu 提示用户"右键可新窗口打开"
             var srcHtml = '';
             var url = cleanUrl(item.sourceUrl);
             if(url){
                 var displayUrl = url.replace(/^https?:\/\//, '');
                 if(displayUrl.length > 60) displayUrl = displayUrl.substring(0, 60) + '...';
-                // 注意：URL 里的单引号可能破坏 onclick 字符串，需要转义
                 var urlJs = url.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
                 srcHtml = '<div class="src-row">'
                     + '<a class="src-link" '
@@ -666,9 +787,9 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
             $('btnNewNote').addEventListener('click', function(){ openNoteForNew(); });
             $('btnLogout').addEventListener('click', function(){
                 currentUser = null;
+                sessionStorage.removeItem('complex_sys_lit_current');
                 editingId = null;
-                renderUserArea();
-                renderList();
+                renderUserArea(); renderList();
                 toast('已退出登录');
             });
         } else {
@@ -678,12 +799,14 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
                 '<button class="btn" id="btnAdminLogin"><i class="fas fa-user-shield"></i> 管理员登录</button>';
             $('btnNewNote').addEventListener('click', function(){ openNoteForNew(); });
             $('btnAdminLogin').addEventListener('click', function(){
-                pendingAction = 'admin';
-                showLogin();
+                pendingAction = 'admin'; showLogin();
             });
         }
     }
 
+    // ============================================================
+    // 事件绑定
+    // ============================================================
     $('searchInput').addEventListener('input', function(){ filterState.keyword = this.value; renderList(); });
     $('filterReader').addEventListener('change', function(){ filterState.reader = this.value; renderList(); });
     $('filterYear').addEventListener('change', function(){ filterState.year = this.value; renderList(); });
@@ -695,24 +818,19 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
         var btn = e.target.closest('.tag-btn');
         if(!btn) return;
         filterState.tag = btn.getAttribute('data-tag');
-        renderFilters();
-        renderList();
+        renderFilters(); renderList();
     });
 
     $('btnExpandAll').addEventListener('click', function(){
-        this.classList.add('active');
-        $('btnCollapseAll').classList.remove('active');
+        this.classList.add('active'); $('btnCollapseAll').classList.remove('active');
         document.querySelectorAll('.lit-card').forEach(function(c){ c.classList.remove('collapsed'); });
     });
     $('btnCollapseAll').addEventListener('click', function(){
-        this.classList.add('active');
-        $('btnExpandAll').classList.remove('active');
+        this.classList.add('active'); $('btnExpandAll').classList.remove('active');
         document.querySelectorAll('.lit-card').forEach(function(c){ c.classList.add('collapsed'); });
     });
 
-    // ★ 列表点击：不干扰链接（链接自己的 onclick 处理）
     $('litList').addEventListener('click', function(e){
-        // 如果点击的是链接或它的子元素，不处理（让 <a> 自己跳转 / onclick 处理）
         if(e.target.closest('a.src-link')) return;
 
         var btn = e.target.closest('button[data-act]');
@@ -727,12 +845,10 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
             if(act === 'copy-url'){ copyText(item.sourceUrl); return; }
             if(act === 'delete'){
                 if(!currentUser || currentUser.role !== 'admin'){ toast('只有管理员可以删除'); return; }
-                openDeleteConfirm(item);
-                return;
+                openDeleteConfirm(item); return;
             }
             if(!currentUser){ pendingAction = { type: act, id: id }; showLogin(); return; }
-            doAction(act, item);
-            return;
+            doAction(act, item); return;
         }
 
         var titleEl = e.target.closest('.lit-title[data-toggle]');
@@ -749,21 +865,25 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
         if(act === 'edit'){
             if(!isAdmin && !isOwner){ toast('无权修改'); return; }
             if(!isAdmin && isOwner && item.modifyCount >= item.maxModify && !item.adminAuthorized){
-                toast('修改次数已用完，请联系管理员授权');
-                return;
+                toast('修改次数已用完，请联系管理员授权'); return;
             }
-            openNoteForEdit(item);
-            return;
+            openNoteForEdit(item); return;
         }
         if(act === 'authorize'){
             if(!isAdmin){ toast('只有管理员可以授权'); return; }
-            item.adminAuthorized = true;
-            renderList();
-            toast('已授权修改');
+            updateLiterature(item.id, { adminAuthorized: true }).then(function(){
+                item.adminAuthorized = true;
+                renderList(); toast('已授权修改');
+            }).catch(function(err){
+                toast('授权失败: ' + err.message);
+            });
             return;
         }
     }
 
+    // ============================================================
+    // 删除确认
+    // ============================================================
     function openDeleteConfirm(item){
         deleteTargetId = item.id;
         $('delTitle').textContent = item.title;
@@ -793,37 +913,36 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
     }
 
     $('delCancelBtn').addEventListener('click', function(){
-        clearInterval(deleteTimer);
-        deleteTargetId = null;
-        $('deleteOverlay').classList.add('hidden');
-        $('delConfirmBtn').disabled = true;
+        clearInterval(deleteTimer); deleteTargetId = null;
+        $('deleteOverlay').classList.add('hidden'); $('delConfirmBtn').disabled = true;
     });
 
     $('delConfirmBtn').addEventListener('click', function(){
-        if(!deleteTargetId){ return; }
+        if(!deleteTargetId) return;
         if(!currentUser || currentUser.role !== 'admin'){
-            toast('只有管理员可以删除');
-            clearInterval(deleteTimer);
-            deleteTargetId = null;
-            $('deleteOverlay').classList.add('hidden');
-            return;
+            toast('只有管理员可以删除'); clearInterval(deleteTimer);
+            deleteTargetId = null; $('deleteOverlay').classList.add('hidden'); return;
         }
         var targetId = deleteTargetId;
         var target = null;
         for(var i=0;i<litData.length;i++){ if(litData[i].id === targetId){ target = litData[i]; break; } }
-        litData = litData.filter(function(x){ return x.id !== targetId; });
-        clearInterval(deleteTimer);
-        deleteTargetId = null;
-        $('deleteOverlay').classList.add('hidden');
-        $('delConfirmBtn').disabled = true;
-        renderFilters();
-        renderList();
-        toast('已删除「' + (target ? target.title : '') + '」');
+
+        deleteLiterature(targetId).then(function(){
+            litData = litData.filter(function(x){ return x.id !== targetId; });
+            clearInterval(deleteTimer); deleteTargetId = null;
+            $('deleteOverlay').classList.add('hidden'); $('delConfirmBtn').disabled = true;
+            renderFilters(); renderList();
+            toast('已删除「' + (target ? target.title : '') + '」');
+        }).catch(function(err){
+            toast('删除失败: ' + err.message);
+        });
     });
 
+    // ============================================================
+    // 登录 / 密码
+    // ============================================================
     function showLogin(){
-        $('loginUser').value = '';
-        $('loginPass').value = '';
+        $('loginUser').value = ''; $('loginPass').value = '';
         $('loginOverlay').classList.remove('hidden');
         setTimeout(function(){ $('loginUser').focus(); }, 100);
     }
@@ -831,45 +950,56 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
 
     $('loginCancelBtn').addEventListener('click', function(){ pendingAction = null; hideLogin(); });
 
-    $('loginDoBtn').addEventListener('click', function(){
+    $('loginDoBtn').addEventListener('click', async function(){
         var u = $('loginUser').value.trim();
         var p = $('loginPass').value.trim();
         if(!u || !p){ toast('请输入账号和密码'); return; }
-        var user = users[u];
-        if(!user || user.password !== p){ toast('账号或密码错误'); return; }
 
-        currentUser = { username: u, role: user.role, name: user.name };
-        hideLogin();
+        // 从数据库重新加载最新用户数据（防止其他电脑修改了密码）
+        try {
+            var res = await supabase.from('app_users').select('*').eq('username', u).single();
+            if(res.error || !res.data){ toast('账号或密码错误'); return; }
+            var user = res.data;
+            if(user.password !== p){ toast('账号或密码错误'); return; }
 
-        if(user.needChangePwd){
-            $('pwdOverlay').classList.remove('hidden');
-            $('pwdNew').value = '';
-            $('pwdConfirm').value = '';
-        } else {
-            afterLogin();
+            currentUser = { username: u, role: user.role, name: user.name };
+            sessionStorage.setItem('complex_sys_lit_current', JSON.stringify(currentUser));
+            hideLogin();
+
+            if(user.need_change_pwd){
+                $('pwdOverlay').classList.remove('hidden');
+                $('pwdNew').value = ''; $('pwdConfirm').value = '';
+            } else {
+                afterLogin();
+            }
+        } catch(e){
+            toast('登录失败: ' + e.message);
         }
     });
 
-    $('pwdDoBtn').addEventListener('click', function(){
+    $('pwdDoBtn').addEventListener('click', async function(){
         var p1 = $('pwdNew').value.trim();
         var p2 = $('pwdConfirm').value.trim();
         if(!p1 || p1.length < 4){ toast('密码至少4位'); return; }
         if(p1 !== p2){ toast('两次密码不一致'); return; }
-        users[currentUser.username].password = p1;
-        users[currentUser.username].needChangePwd = false;
-        $('pwdOverlay').classList.add('hidden');
-        afterLogin();
+
+        try {
+            await updateUserPassword(currentUser.username, p1, false);
+            users[currentUser.username].password = p1;
+            users[currentUser.username].needChangePwd = false;
+            $('pwdOverlay').classList.add('hidden');
+            afterLogin();
+        } catch(e){
+            toast('修改失败: ' + e.message);
+        }
     });
 
     function afterLogin(){
-        renderUserArea();
-        renderFilters();
-        renderList();
+        renderUserArea(); renderFilters(); renderList();
         toast('登录成功');
 
         if(pendingAction){
-            var pa = pendingAction;
-            pendingAction = null;
+            var pa = pendingAction; pendingAction = null;
             if(pa === 'admin') return;
             if(pa === 'new'){ openNoteForNew(); return; }
             if(pa.type){
@@ -880,24 +1010,21 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
         }
     }
 
+    // ============================================================
+    // 录入 / 编辑
+    // ============================================================
     function openNoteForNew(){
         if(!currentUser){ pendingAction = 'new'; showLogin(); return; }
         editingId = null;
         $('noteTitle').innerHTML = '<i class="fas fa-pen-fancy"></i> 录入文献与读书笔记';
         $('fReader').value = currentUser.name;
         $('fDate').value = new Date().toISOString().slice(0,10);
-        $('fTitle').value = '';
-        $('fAuthors').value = '';
-        $('fYear').value = '';
-        $('fJournal').value = '';
-        $('fIssue').value = '';
-        $('fPages').value = '';
-        $('fSourceUrl').value = '';
-        $('fTags').value = '';
-        $('fNotes').value = '';
-        $('fInnovation').value = '';
-        $('fWeakness').value = '';
-        $('fExtension').value = '';
+        $('fTitle').value = ''; $('fAuthors').value = '';
+        $('fYear').value = ''; $('fJournal').value = '';
+        $('fIssue').value = ''; $('fPages').value = '';
+        $('fSourceUrl').value = ''; $('fTags').value = '';
+        $('fNotes').value = ''; $('fInnovation').value = '';
+        $('fWeakness').value = ''; $('fExtension').value = '';
         updateRef();
         $('noteOverlay').classList.remove('hidden');
     }
@@ -905,12 +1032,9 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
     function openNoteForEdit(item){
         editingId = item.id;
         $('noteTitle').innerHTML = '<i class="fas fa-edit"></i> 修改文献记录';
-        $('fReader').value = item.readerName;
-        $('fDate').value = item.readDate;
-        $('fTitle').value = item.title;
-        $('fAuthors').value = item.authors;
-        $('fYear').value = item.year;
-        $('fJournal').value = item.journal;
+        $('fReader').value = item.readerName; $('fDate').value = item.readDate;
+        $('fTitle').value = item.title; $('fAuthors').value = item.authors;
+        $('fYear').value = item.year; $('fJournal').value = item.journal;
         $('fIssue').value = item.issue === '—' ? '' : item.issue;
         $('fPages').value = item.pages === '—' ? '' : item.pages;
         $('fSourceUrl').value = item.sourceUrl || '';
@@ -937,7 +1061,7 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
     $('copyRefBtn').addEventListener('click', function(){ copyText($('refText').textContent); });
     $('noteCancelBtn').addEventListener('click', function(){ $('noteOverlay').classList.add('hidden'); });
 
-    $('noteSubmitBtn').addEventListener('click', function(){
+    $('noteSubmitBtn').addEventListener('click', async function(){
         var reader = $('fReader').value.trim();
         var date = $('fDate').value;
         var title = $('fTitle').value.trim();
@@ -954,74 +1078,92 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
         var extension = $('fExtension').value.trim();
 
         if(!reader || !date || !title || !authors || !year || !journal){
-            toast('请填写必填项：阅读者、时间、标题、作者、年份、期刊');
-            return;
+            toast('请填写必填项：阅读者、时间、标题、作者、年份、期刊'); return;
         }
-
         if(sourceUrl && !cleanUrl(sourceUrl)){
-            toast('文献来源链接格式不正确，请填写有效的 URL');
-            return;
+            toast('文献来源链接格式不正确，请填写有效的 URL'); return;
         }
 
         var tags = tagsRaw ? tagsRaw.split(/[,，]/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length>0; }) : [];
         var ref = genRef(authors, year, title, journal, issue, pages);
 
-        if(editingId){
-            var item = null;
-            for(var i=0;i<litData.length;i++){ if(litData[i].id === editingId){ item = litData[i]; break; } }
-            if(!item){ toast('记录不存在'); return; }
+        try {
+            if(editingId){
+                var item = null;
+                for(var i=0;i<litData.length;i++){ if(litData[i].id === editingId){ item = litData[i]; break; } }
+                if(!item){ toast('记录不存在'); return; }
 
-            var isAdmin = currentUser.role === 'admin';
-            var isOwner = currentUser.username === item.submittedBy;
+                var isAdmin = currentUser.role === 'admin';
+                var isOwner = currentUser.username === item.submittedBy;
 
-            if(!isAdmin && isOwner){
-                if(item.modifyCount >= item.maxModify && !item.adminAuthorized){
-                    toast('修改次数已用完');
-                    return;
+                var updates = {
+                    readerName: reader, readDate: date, title: title,
+                    authors: authors, year: year, journal: journal,
+                    issue: issue || '—', pages: pages || '—',
+                    sourceUrl: sourceUrl, tags: tags,
+                    notes: notes || '—', innovation: innovation || '—',
+                    weakness: weakness || '—', extension: extension || '—',
+                    ref: ref
+                };
+
+                if(!isAdmin && isOwner){
+                    if(item.modifyCount >= item.maxModify && !item.adminAuthorized){
+                        toast('修改次数已用完'); return;
+                    }
+                    updates.modifyCount = item.modifyCount + 1;
                 }
-                item.modifyCount += 1;
+
+                await updateLiterature(editingId, updates);
+
+                // 更新本地数据
+                for(var k in updates){ item[k] = updates[k]; }
+                toast('修改成功，已保存到云端');
+            } else {
+                var newRecord = {
+                    id: 'lit-' + Date.now() + '-' + Math.random().toString(36).substr(2,6),
+                    readerName: reader, readDate: date, title: title,
+                    authors: authors, year: year, journal: journal,
+                    issue: issue || '—', pages: pages || '—',
+                    sourceUrl: sourceUrl, tags: tags,
+                    notes: notes || '—', innovation: innovation || '—',
+                    weakness: weakness || '—', extension: extension || '—',
+                    ref: ref, modifyCount: 0, maxModify: 3,
+                    adminAuthorized: false, submittedBy: currentUser.username
+                };
+                await insertLiterature(newRecord);
+                litData.unshift(newRecord);
+                toast('提交成功，已保存到云端');
             }
 
-            item.readerName = reader;
-            item.readDate = date;
-            item.title = title;
-            item.authors = authors;
-            item.year = year;
-            item.journal = journal;
-            item.issue = issue || '—';
-            item.pages = pages || '—';
-            item.sourceUrl = sourceUrl;
-            item.tags = tags;
-            item.notes = notes || '—';
-            item.innovation = innovation || '—';
-            item.weakness = weakness || '—';
-            item.extension = extension || '—';
-            item.ref = ref;
-            toast('修改成功');
-        } else {
-            litData.push({
-                id: 'lit-' + Date.now() + '-' + Math.random().toString(36).substr(2,6),
-                readerName: reader, readDate: date, title: title,
-                authors: authors, year: year, journal: journal,
-                issue: issue || '—', pages: pages || '—',
-                sourceUrl: sourceUrl,
-                tags: tags,
-                notes: notes || '—', innovation: innovation || '—',
-                weakness: weakness || '—', extension: extension || '—',
-                ref: ref, modifyCount: 0, maxModify: 3,
-                adminAuthorized: false, submittedBy: currentUser.username
-            });
-            toast('提交成功');
+            $('noteOverlay').classList.add('hidden');
+            renderFilters(); renderList();
+        } catch(e){
+            console.error('保存失败:', e);
+            toast('保存失败: ' + e.message);
         }
-
-        $('noteOverlay').classList.add('hidden');
-        renderFilters();
-        renderList();
     });
 
-    renderUserArea();
-    renderFilters();
-    renderList();
+    // ============================================================
+    // 初始化
+    // ============================================================
+    (async function init(){
+        // 恢复登录状态
+        var savedUser = sessionStorage.getItem('complex_sys_lit_current');
+        if(savedUser){
+            try { currentUser = JSON.parse(savedUser); } catch(e){ currentUser = null; }
+        }
+
+        // 从 Supabase 加载数据
+        await loadFromSupabase();
+
+        // 隐藏加载动画
+        $('loadingOverlay').classList.add('hidden');
+
+        // 渲染界面
+        renderUserArea(); renderFilters(); renderList();
+
+        console.log('%c📚 文献阅读记录库已就绪', 'color:#2c5f8a;font-size:14px;font-weight:bold;');
+    })();
 })();
 </script>
 </body>
