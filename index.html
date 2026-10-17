@@ -6,6 +6,7 @@
 <title>文献阅读记录库 · 数统学院复杂系统课题组</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <style>
+/* ========== 原有样式保持不变 ========== */
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
 body{background:#f5f7fc;padding:2rem 1rem;min-height:100vh}
 .app-container{max-width:1280px;margin:0 auto}
@@ -79,6 +80,12 @@ body{background:#f5f7fc;padding:2rem 1rem;min-height:100vh}
 .src-link .url-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:420px}
 .src-copy-btn{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1.5px solid #d0ddee;padding:.45rem .9rem;border-radius:40px;font-size:.75rem;color:#4b6f8e;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
 .src-copy-btn:hover{background:#f0f5fc;border-color:#2c5f8a;color:#2c5f8a}
+
+/* 新增 PDF 按钮样式 */
+.pdf-link{display:inline-flex;align-items:center;gap:6px;background:#fef2f2;border:1.5px solid #fecaca;padding:.45rem 1.1rem;border-radius:40px;font-size:.78rem;color:#b91c1c;font-weight:600;text-decoration:none;transition:.15s;max-width:100%;cursor:pointer;font-family:inherit;margin-right:8px;}
+.pdf-link:hover{background:#dc2626;border-color:#dc2626;color:#fff;box-shadow:0 4px 10px -2px rgba(220,38,38,.4);text-decoration:none}
+.pdf-link:hover i{color:#fff}
+.pdf-link i{color:#b91c1c;flex-shrink:0;transition:.15s}
 
 .lit-ref{background:rgba(255,255,255,.75);border-radius:14px;padding:.7rem 1.1rem;font-family:'Courier New',monospace;font-size:.82rem;color:#1f405e;margin:.6rem 0;border:1px dashed #b8cee6;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
 .lit-notes{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin:.8rem 0 .6rem}
@@ -205,12 +212,12 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
     <div class="modal modal-sm">
         <h3><i class="fas fa-sign-in-alt"></i> 请登录</h3>
         <div class="field">
-            <label><i class="fas fa-id-card"></i> 学号 / 管理员账号</label>
+            <label><i class="fas fa-id-card"></i> 学号（后8位） / 管理员账号</label>
             <input type="text" id="loginUser" placeholder="例如: 2024001 或 admin" autocomplete="off">
         </div>
         <div class="field">
             <label><i class="fas fa-lock"></i> 密码</label>
-            <input type="password" id="loginPass" placeholder="初始密码与学号相同">
+            <input type="password" id="loginPass" placeholder="初始密码与学号（后8位）相同">
         </div>
         <div class="modal-actions">
             <button type="button" class="btn" id="loginCancelBtn">取消</button>
@@ -309,6 +316,14 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
                 <input type="url" id="fSourceUrl" placeholder="例如: https://doi.org/10.xxxx 或 https://ieeexplore.ieee.org/document/xxxx">
                 <div class="tip"><i class="fas fa-info-circle"></i> 填写 DOI 或数据库页面链接，方便直接跳转查看原文</div>
             </div>
+            
+            <!-- ★ 新增：PDF 上传 -->
+            <div class="field full">
+                <label><i class="fas fa-file-pdf" style="color:#b91c1c"></i> 上传文献 PDF（可选，限 20MB）</label>
+                <input type="file" id="fPdfFile" accept="application/pdf" style="padding:.5rem; border:1px dashed #dfe8f2; background:#fff;">
+                <div class="tip" id="pdfStatusTip"><i class="fas fa-info-circle"></i> 选择 PDF 文件后，提交时会自动上传至云端</div>
+            </div>
+
             <div class="field full">
                 <label><i class="fas fa-tags"></i> 关键词标签 (逗号分隔，用于筛选)</label>
                 <input type="text" id="fTags" placeholder="例如: 深度学习, 注意力机制, 图神经网络">
@@ -346,28 +361,25 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
 
 <div id="toast" class="toast"></div>
 
-<!-- ============================================================ -->
-<!-- Supabase JS 客户端 (CDN) -->
-<!-- ============================================================ -->
+<!-- Supabase JS 客户端 -->
 <script src="https://cdn.jsdelivr.net.cn/npm/@supabase/supabase-js@2"></script>
 
 <script>
 (function(){
     // ============================================================
-    // ★★★ 配置区域：将下面两个值替换为你自己的 Supabase 凭据 ★★★
+    // ★★★ 配置区域 ★★★
     // ============================================================
     var SUPABASE_URL = 'https://egujxwbjondlygavghve.supabase.co';
     var SUPABASE_ANON_KEY = 'sb_publishable_gQeNOMayZCqaQAxijWFOJQ_MeJdBSJz';
 
-    // 初始化 Supabase 客户端
     var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ============================================================
     // 全局状态
     // ============================================================
-    var users = {};         // 用户表 { username: {password, role, name, needChangePwd} }
-    var litData = [];       // 文献记录数组
-    var currentUser = null; // 当前登录用户
+    var users = {};
+    var litData = [];
+    var currentUser = null;
     var editingId = null;
     var pendingAction = null;
     var deleteTargetId = null;
@@ -386,7 +398,7 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
         t.textContent = msg;
         t.classList.add('show');
         clearTimeout(t._timer);
-        t._timer = setTimeout(function(){ t.classList.remove('show'); }, 2000);
+        t._timer = setTimeout(function(){ t.classList.remove('show'); }, 3000);
     }
 
     function esc(s){
@@ -408,10 +420,9 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
         } catch(e){ return safe; }
     }
 
-        function genRef(authors, year, title, journal, issue, pages){
-        // 1. 清理并解析作者列表
+    // 修改后的参考文献生成（列出所有作者）
+    function genRef(authors, year, title, journal, issue, pages){
         var a = (authors||'').trim() || 'Unknown';
-        // 按逗号或中文逗号分割，去除首尾空格，并过滤空字符串
         var parts = a.split(/[,，]/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length > 0; });
         
         var authorsStr = '';
@@ -420,22 +431,17 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
         } else if (parts.length === 1) {
             authorsStr = parts[0];
         } else {
-            // 取出最后一个作者
             var lastAuthor = parts.pop();
-            // 剩下的作者用逗号连接，最后加上 "& 最后一个作者"
             authorsStr = parts.join(', ') + ', & ' + lastAuthor;
         }
 
-        // 2. 处理其他字段
         var y = (year||'').trim() || 'n.d.';
         var t = (title||'').trim() || 'Untitled';
         var j = (journal||'').trim() || 'Unknown';
-        
         var extra = '';
         if(issue && issue.trim()) extra += ', ' + issue.trim();
         if(pages && pages.trim()) extra += ', ' + pages.trim();
         
-        // 3. 拼接最终格式
         return authorsStr + ' (' + y + '). ' + t + '. ' + j + extra + '.';
     }
 
@@ -469,10 +475,8 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
     }
 
     // ============================================================
-    // 数据库操作函数 (Supabase)
+    // Supabase 数据库操作
     // ============================================================
-
-    // 从 Supabase 加载所有数据
     async function loadFromSupabase(){
         try {
             var [usersRes, litRes] = await Promise.all([
@@ -483,7 +487,6 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
             if (usersRes.error) throw usersRes.error;
             if (litRes.error) throw litRes.error;
 
-            // 将用户数组转为对象 { username: {...} }
             users = {};
             (usersRes.data || []).forEach(function(u){
                 users[u.username] = {
@@ -494,7 +497,6 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
                 };
             });
 
-            // 将文献数据字段名从 snake_case 转为 camelCase
             litData = (litRes.data || []).map(function(row){
                 return {
                     id: row.id,
@@ -507,6 +509,7 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
                     issue: row.issue,
                     pages: row.pages,
                     sourceUrl: row.source_url,
+                    pdfUrl: row.pdf_url, // ★ 新增映射
                     notes: row.notes,
                     innovation: row.innovation,
                     weakness: row.weakness,
@@ -521,14 +524,12 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
             });
 
             serverReady = true;
-            console.log('✅ 数据已从 Supabase 加载', { 用户数: Object.keys(users).length, 文献数: litData.length });
         } catch (e){
             console.error('❌ 加载数据失败:', e);
             alert('⚠️ 无法连接到 Supabase 数据库，请检查网络或配置。');
         }
     }
 
-    // 新增文献
     async function insertLiterature(item){
         var row = {
             id: item.id,
@@ -541,6 +542,7 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
             issue: item.issue,
             pages: item.pages,
             source_url: item.sourceUrl,
+            pdf_url: item.pdfUrl, // ★ 新增
             notes: item.notes,
             innovation: item.innovation,
             weakness: item.weakness,
@@ -557,7 +559,6 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
         return result;
     }
 
-    // 更新文献
     async function updateLiterature(id, updates){
         var row = {};
         if (updates.readerName !== undefined) row.reader_name = updates.readerName;
@@ -569,6 +570,7 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
         if (updates.issue !== undefined) row.issue = updates.issue;
         if (updates.pages !== undefined) row.pages = updates.pages;
         if (updates.sourceUrl !== undefined) row.source_url = updates.sourceUrl;
+        if (updates.pdfUrl !== undefined) row.pdf_url = updates.pdfUrl; // ★ 新增
         if (updates.notes !== undefined) row.notes = updates.notes;
         if (updates.innovation !== undefined) row.innovation = updates.innovation;
         if (updates.weakness !== undefined) row.weakness = updates.weakness;
@@ -583,14 +585,12 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
         return result;
     }
 
-    // 删除文献
     async function deleteLiterature(id){
         var result = await supabase.from('literature').delete().eq('id', id);
         if (result.error) throw result.error;
         return result;
     }
 
-    // 更新用户密码
     async function updateUserPassword(username, newPassword, needChangePwd){
         var result = await supabase.from('app_users').update({
             password: newPassword,
@@ -739,27 +739,32 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
                 }).join('');
             }
 
-            var srcHtml = '';
+            // ★ 生成 PDF 和 来源链接
+            var linksHtml = '<div class="src-row">';
+            if (item.pdfUrl) {
+                linksHtml += '<a class="pdf-link" href="' + attrEsc(item.pdfUrl) + '" target="_blank" rel="noopener noreferrer">'
+                           + '<i class="fas fa-file-pdf"></i> 查看 PDF'
+                           + '</a>';
+            }
             var url = cleanUrl(item.sourceUrl);
             if(url){
                 var displayUrl = url.replace(/^https?:\/\//, '');
                 if(displayUrl.length > 60) displayUrl = displayUrl.substring(0, 60) + '...';
                 var urlJs = url.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-                srcHtml = '<div class="src-row">'
-                    + '<a class="src-link" '
+                linksHtml += '<a class="src-link" '
                     +   'href="' + attrEsc(url) + '" '
                     +   'target="_blank" '
                     +   'rel="noopener noreferrer" '
                     +   'data-url="' + attrEsc(url) + '" '
-                    +   'title="点击打开链接（如无法新窗口打开，请右键 → 在新标签页中打开）" '
+                    +   'title="点击打开链接" '
                     +   'onclick="var _u=\'' + urlJs + '\';try{var _w=window.open(_u,\'_blank\');if(_w){_w.opener=null;return false;}}catch(e){}" '
                     + '>'
                     +   '<i class="fas fa-external-link-alt"></i>'
                     +   '<span class="url-text">' + esc(displayUrl) + '</span>'
                     + '</a>'
-                    + '<button type="button" class="src-copy-btn" data-act="copy-url" data-id="' + item.id + '" title="复制链接"><i class="far fa-copy"></i> 复制链接</button>'
-                    + '</div>';
+                    + '<button type="button" class="src-copy-btn" data-act="copy-url" data-id="' + item.id + '" title="复制链接"><i class="far fa-copy"></i> 复制链接</button>';
             }
+            linksHtml += '</div>';
 
             html += '<div class="lit-card" data-id="' + item.id + '">'
                 + '<div class="lit-header">'
@@ -778,7 +783,7 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
                 +     '<span><i class="fas fa-file-alt"></i> 页码: ' + highlight(item.pages, kw) + '</span>'
                 +     tagsHtml
                 +   '</div>'
-                +   srcHtml
+                +   linksHtml
                 +   '<div class="lit-ref"><span>' + esc(item.ref) + '</span></div>'
                 +   '<div class="lit-notes">'
                 +     '<div class="note-block"><strong><i class="fas fa-pen"></i> 阅读笔记</strong><p>' + (highlight(item.notes, kw) || '—') + '</p></div>'
@@ -848,7 +853,7 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
     });
 
     $('litList').addEventListener('click', function(e){
-        if(e.target.closest('a.src-link')) return;
+        if(e.target.closest('a.src-link') || e.target.closest('a.pdf-link')) return;
 
         var btn = e.target.closest('button[data-act]');
         if(btn){
@@ -972,7 +977,6 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
         var p = $('loginPass').value.trim();
         if(!u || !p){ toast('请输入账号和密码'); return; }
 
-        // 从数据库重新加载最新用户数据（防止其他电脑修改了密码）
         try {
             var res = await supabase.from('app_users').select('*').eq('username', u).single();
             if(res.error || !res.data){ toast('账号或密码错误'); return; }
@@ -1042,6 +1046,8 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
         $('fSourceUrl').value = ''; $('fTags').value = '';
         $('fNotes').value = ''; $('fInnovation').value = '';
         $('fWeakness').value = ''; $('fExtension').value = '';
+        $('fPdfFile').value = ''; // 清空文件
+        $('pdfStatusTip').innerHTML = '<i class="fas fa-info-circle"></i> 选择 PDF 文件后，提交时会自动上传至云端';
         updateRef();
         $('noteOverlay').classList.remove('hidden');
     }
@@ -1060,6 +1066,12 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
         $('fInnovation').value = item.innovation === '—' ? '' : item.innovation;
         $('fWeakness').value = item.weakness === '—' ? '' : item.weakness;
         $('fExtension').value = item.extension === '—' ? '' : item.extension;
+        $('fPdfFile').value = ''; // 清空文件选择
+        if (item.pdfUrl) {
+            $('pdfStatusTip').innerHTML = '<i class="fas fa-check-circle" style="color:#10b981"></i> 已上传 PDF，如需替换请重新选择文件';
+        } else {
+            $('pdfStatusTip').innerHTML = '<i class="fas fa-info-circle"></i> 选择 PDF 文件后，提交时会自动上传至云端';
+        }
         updateRef();
         $('noteOverlay').classList.remove('hidden');
     }
@@ -1078,6 +1090,7 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
     $('copyRefBtn').addEventListener('click', function(){ copyText($('refText').textContent); });
     $('noteCancelBtn').addEventListener('click', function(){ $('noteOverlay').classList.add('hidden'); });
 
+    // ★ 提交表单（包含 PDF 上传逻辑）
     $('noteSubmitBtn').addEventListener('click', async function(){
         var reader = $('fReader').value.trim();
         var date = $('fDate').value;
@@ -1093,6 +1106,9 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
         var innovation = $('fInnovation').value.trim();
         var weakness = $('fWeakness').value.trim();
         var extension = $('fExtension').value.trim();
+        
+        var fileInput = $('fPdfFile');
+        var file = fileInput.files[0];
 
         if(!reader || !date || !title || !authors || !year || !journal){
             toast('请填写必填项：阅读者、时间、标题、作者、年份、期刊'); return;
@@ -1100,11 +1116,37 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
         if(sourceUrl && !cleanUrl(sourceUrl)){
             toast('文献来源链接格式不正确，请填写有效的 URL'); return;
         }
+        if (file && file.size > 20 * 1024 * 1024) {
+            toast('PDF 文件不能超过 20MB'); return;
+        }
 
         var tags = tagsRaw ? tagsRaw.split(/[,，]/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length>0; }) : [];
         var ref = genRef(authors, year, title, journal, issue, pages);
 
+        // 按钮改为加载状态
+        var submitBtn = this;
+        var originalBtnHtml = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在保存...';
+
         try {
+            var pdfUrl = (editingId ? (litData.find(x => x.id === editingId) || {}).pdfUrl : null) || null;
+
+            // 1. 如果选择了新的 PDF 文件，则先上传
+            if (file) {
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在上传 PDF...';
+                var fileExt = file.name.split('.').pop();
+                var fileName = 'pdf_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.' + fileExt;
+                var uploadRes = await supabase.storage.from('pdfs').upload(fileName, file);
+                
+                if (uploadRes.error) throw new Error('PDF上传失败: ' + uploadRes.error.message);
+                
+                var urlRes = supabase.storage.from('pdfs').getPublicUrl(fileName);
+                pdfUrl = urlRes.data.publicUrl;
+            }
+
+            // 2. 保存文献信息到数据库
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在保存信息...';
             if(editingId){
                 var item = null;
                 for(var i=0;i<litData.length;i++){ if(litData[i].id === editingId){ item = litData[i]; break; } }
@@ -1118,6 +1160,7 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
                     authors: authors, year: year, journal: journal,
                     issue: issue || '—', pages: pages || '—',
                     sourceUrl: sourceUrl, tags: tags,
+                    pdfUrl: pdfUrl, // 放入链接
                     notes: notes || '—', innovation: innovation || '—',
                     weakness: weakness || '—', extension: extension || '—',
                     ref: ref
@@ -1125,14 +1168,12 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
 
                 if(!isAdmin && isOwner){
                     if(item.modifyCount >= item.maxModify && !item.adminAuthorized){
-                        toast('修改次数已用完'); return;
+                        toast('修改次数已用完'); submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; return;
                     }
                     updates.modifyCount = item.modifyCount + 1;
                 }
 
                 await updateLiterature(editingId, updates);
-
-                // 更新本地数据
                 for(var k in updates){ item[k] = updates[k]; }
                 toast('修改成功，已保存到云端');
             } else {
@@ -1142,6 +1183,7 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
                     authors: authors, year: year, journal: journal,
                     issue: issue || '—', pages: pages || '—',
                     sourceUrl: sourceUrl, tags: tags,
+                    pdfUrl: pdfUrl, // 放入链接
                     notes: notes || '—', innovation: innovation || '—',
                     weakness: weakness || '—', extension: extension || '—',
                     ref: ref, modifyCount: 0, maxModify: 3,
@@ -1157,6 +1199,9 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
         } catch(e){
             console.error('保存失败:', e);
             toast('保存失败: ' + e.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnHtml;
         }
     });
 
@@ -1164,21 +1209,13 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
     // 初始化
     // ============================================================
     (async function init(){
-        // 恢复登录状态
         var savedUser = sessionStorage.getItem('complex_sys_lit_current');
         if(savedUser){
             try { currentUser = JSON.parse(savedUser); } catch(e){ currentUser = null; }
         }
-
-        // 从 Supabase 加载数据
         await loadFromSupabase();
-
-        // 隐藏加载动画
         $('loadingOverlay').classList.add('hidden');
-
-        // 渲染界面
         renderUserArea(); renderFilters(); renderList();
-
         console.log('%c📚 文献阅读记录库已就绪', 'color:#2c5f8a;font-size:14px;font-weight:bold;');
     })();
 })();
