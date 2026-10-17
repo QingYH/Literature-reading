@@ -408,18 +408,35 @@ mark{background:#fff3b0;color:#8a6d00;padding:0 2px;border-radius:3px}
         } catch(e){ return safe; }
     }
 
-    function genRef(authors, year, title, journal, issue, pages){
+        function genRef(authors, year, title, journal, issue, pages){
+        // 1. 清理并解析作者列表
         var a = (authors||'').trim() || 'Unknown';
-        var parts = a.split(',').map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
-        var first = parts[0] || 'Unknown';
-        if(parts.length > 1) first += ', et al.';
+        // 按逗号或中文逗号分割，去除首尾空格，并过滤空字符串
+        var parts = a.split(/[,，]/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length > 0; });
+        
+        var authorsStr = '';
+        if (parts.length === 0) {
+            authorsStr = 'Unknown';
+        } else if (parts.length === 1) {
+            authorsStr = parts[0];
+        } else {
+            // 取出最后一个作者
+            var lastAuthor = parts.pop();
+            // 剩下的作者用逗号连接，最后加上 "& 最后一个作者"
+            authorsStr = parts.join(', ') + ', & ' + lastAuthor;
+        }
+
+        // 2. 处理其他字段
         var y = (year||'').trim() || 'n.d.';
         var t = (title||'').trim() || 'Untitled';
         var j = (journal||'').trim() || 'Unknown';
+        
         var extra = '';
         if(issue && issue.trim()) extra += ', ' + issue.trim();
         if(pages && pages.trim()) extra += ', ' + pages.trim();
-        return first + ' (' + y + '). ' + t + '. ' + j + extra + '.';
+        
+        // 3. 拼接最终格式
+        return authorsStr + ' (' + y + '). ' + t + '. ' + j + extra + '.';
     }
 
     function copyText(text){
